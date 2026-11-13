@@ -1,0 +1,197 @@
+/* Cafefe: estilos generales, sin librerías externas. */
+:root {
+    --color-primario: #2f5d50;
+    --color-primario-oscuro: #23483d;
+    --color-secundario: #d9c7a3;
+    --color-fondo: #f7f6f2;
+    --color-superficie: #ffffff;
+    --color-texto: #26312d;
+    --color-texto-suave: #68736f;
+    --color-borde: #e4e7e1;
+    --radio: 14px;
+}
+
+* { box-sizing: border-box; }
+
+html { font-family: Arial, Helvetica, sans-serif; }
+
+body {
+    margin: 0;
+    min-width: 320px;
+    color: var(--color-texto);
+    background: var(--color-fondo);
+}
+
+.aplicacion {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 230px minmax(0, 1fr);
+    grid-template-rows: 76px minmax(0, 1fr) auto;
+    grid-template-areas:
+        "encabezado encabezado"
+        "lateral contenido"
+        "pie pie";
+}
+
+.encabezado {
+    grid-area: encabezado;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 0 32px;
+    color: white;
+    background: var(--color-primario);
+}
+
+.marca { display: flex; align-items: center; gap: 12px; }
+
+.marca__simbolo {
+    width: 40px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 12px;
+    font-family: Georgia, serif;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.marca__nombre { font-weight: 800; font-size: 21px; letter-spacing: 3px; }
+.encabezado__estado { font-size: 14px; opacity: 0.88; }
+
+.barra-lateral {
+    grid-area: lateral;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    padding: 28px 16px;
+    background: #eee7d8;
+    border-right: 1px solid #e1dacb;
+}
+
+.barra-lateral__titulo {
+    margin: 0 12px;
+    color: #625b4f;
+    font-size: 11px;
+    font-weight: bold;
+    letter-spacing: 2px;
+}
+
+.navegacion { display: grid; gap: 6px; }
+
+.navegacion__item {
+    display: block;
+    padding: 13px 15px;
+    border-radius: 9px;
+    color: #494d43;
+    font-size: 14px;
+}
+
+.navegacion__item--activo {
+    color: #fff;
+    background: var(--color-primario);
+    font-weight: bold;
+}
+
+.barra-lateral__nota {
+    margin: auto 12px 0;
+    color: #777468;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.contenido {
+    grid-area: contenido;
+    width: 100%;
+    max-width: 1240px;
+    padding: 48px clamp(20px, 4vw, 64px) 64px;
+}
+
+.contenido__cabecera { max-width: 680px; }
+
+.contenido__etiqueta {
+    margin: 0 0 12px;
+    color: var(--color-primario);
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 2px;
+}
+
+h1 { margin: 0 0 12px; font-size: clamp(28px, 3vw, 42px); }
+
+.contenido__descripcion {
+    margin: 0;
+    color: var(--color-texto-suave);
+    line-height: 1.7;
+}
+
+.resumen { margin-top: 42px; }
+h2 { margin: 0 0 20px; font-size: 19px; }
+
+.tarjetas {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.tarjeta {
+    padding: 25px;
+    background: var(--color-superficie);
+    border: 1px solid var(--color-borde);
+    border-radius: var(--radio);
+    box-shadow: 0 5px 18px rgba(35, 72, 61, 0.04);
+}
+
+.tarjeta__numero {
+    display: inline-block;
+    margin-bottom: 24px;
+    color: var(--color-primario);
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.tarjeta h3 { margin: 0 0 10px; font-size: 17px; }
+.tarjeta p { margin: 0; color: var(--color-texto-suave); font-size: 14px; line-height: 1.6; }
+
+.pie {
+    grid-area: pie;
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 18px 32px;
+    color: #e7eee9;
+    background: var(--color-primario-oscuro);
+    font-size: 12px;
+}
+
+@media (max-width: 760px) {
+    .aplicacion {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: auto auto minmax(0, 1fr) auto;
+        grid-template-areas:
+            "encabezado"
+            "lateral"
+            "contenido"
+            "pie";
+    }
+
+    .encabezado { min-height: 76px; padding: 16px 20px; }
+    .encabezado__estado { display: none; }
+
+    .barra-lateral {
+        padding: 14px 18px;
+        gap: 8px;
+        border-right: 0;
+        border-bottom: 1px solid #e1dacb;
+    }
+
+    .barra-lateral__titulo, .barra-lateral__nota { display: none; }
+
+    .navegacion { display: flex; overflow-x: auto; gap: 6px; }
+    .navegacion__item { flex: 0 0 auto; padding: 10px 12px; font-size: 13px; }
+    .contenido { padding: 32px 20px 48px; }
+    .tarjetas { grid-template-columns: 1fr; }
+    .pie { padding: 17px 20px; flex-wrap: wrap; }
+}
