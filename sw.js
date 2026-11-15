@@ -1,8 +1,20 @@
-const CACHE = 'cafefe-shell-v2';
+const CACHE = 'cafefe-shell-v6';
 const RECURSOS = [
     './index.html', './manifest.webmanifest',
     './src/boundary/app.js', './src/boundary/login-view.js', './src/boundary/recepcion-view.js',
     './src/control/default_service.js', './src/control/acceso.js', './src/control/recepcion.js', './src/control/pwa.js', './src/control/navegacion.js',
+    './src/boundary/pedido_publico.js', './src/control/pedido_publico_service.js', './src/entity/pedido_publico.js',
+    './src/recursos/estilos/pedido_publico.css',
+    './src/recursos/imagenes/bebidas-calientes.jpg', './src/recursos/imagenes/bebidas-frias.jpg',
+    './src/recursos/imagenes/comida.jpg', './src/recursos/imagenes/postres.jpg', './src/recursos/imagenes/categoria-cafefe.webp',
+    './src/recursos/imagenes/productos/americano-helado.jpg', './src/recursos/imagenes/productos/americano.jpg',
+    './src/recursos/imagenes/productos/brownie.jpg', './src/recursos/imagenes/productos/capuchino.jpg',
+    './src/recursos/imagenes/productos/croissant-jamon-queso.jpg', './src/recursos/imagenes/productos/flan.jpg',
+    './src/recursos/imagenes/productos/frappe-caramelo.jpg', './src/recursos/imagenes/productos/latte-helado.jpg',
+    './src/recursos/imagenes/productos/mocha.jpg', './src/recursos/imagenes/productos/panini-pavo.jpg',
+    './src/recursos/imagenes/productos/pie.jpg', './src/recursos/imagenes/productos/sandwich-pollo.jpg',
+    './src/recursos/imagenes/productos/cafe-caramelo.jpg', './src/recursos/imagenes/productos/budin-caramelo.jpg',
+    './src/recursos/imagenes/productos/pai-pina.jpg',
     './src/entity/default_error.js', './src/recursos/estilos/principal.css', './src/recursos/estilos/personal.css',
     './src/recursos/iconos/icon-192.png', './src/recursos/iconos/icon-512.png'
 ];
