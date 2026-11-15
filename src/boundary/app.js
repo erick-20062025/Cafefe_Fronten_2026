@@ -1,6 +1,7 @@
 import './login-view.js';
 import './recepcion-view.js';
 import { Acceso, permite } from '../control/acceso.js';
+import { resolverRuta } from '../control/navegacion.js';
 import { registrarPwa } from '../control/pwa.js';
 // Erick puede registrar los elementos con estos nombres antes de la navegación.
 export const integraciones = { pedido: 'cafefe-pedido', cobros: 'cafefe-cobros' };
@@ -11,11 +12,11 @@ export class CafefeApp extends HTMLElement {
         this.append(plantilla.content.cloneNode(true));
         this.querySelector('.navegacion').innerHTML = `<a class="navegacion__item" href="#/pedido">Pedido público</a>
         <a class="navegacion__item" href="#/recepcion">Recepción</a><a class="navegacion__item" href="#/cobros">Cobros</a>
-        <a class="navegacion__item" href="#/login">Acceso del personal</a><button class="salir" hidden>Cerrar sesión</button>`;
+        <a class="navegacion__item" href="#/login">Acceso del personal</a><button class="salir cafefe-boton" hidden>Cerrar sesión</button>`;
         this.querySelector('.barra-lateral__nota').textContent = 'Acceso del personal según roles del servidor.';
         this.querySelector('.pie span:last-child').textContent = 'Segundo entregable · PPI115';
         this.querySelector('.salir').onclick = async () => {
-            const cierre = this.acceso.cerrar(); this.navegar('pedido');
+            const cierre = this.acceso.cerrar(); this.navegar('pedido'); this.render();
             try { await cierre; } catch { this.querySelector('.conexion').textContent = 'No se pudo confirmar el cierre en el servidor. Reconecta para volver a intentarlo.'; }
         };
         this.addEventListener('acceso-iniciado', event => this.navegar(event.detail));
@@ -32,8 +33,7 @@ export class CafefeApp extends HTMLElement {
     }
     navegar(ruta) { if (location.hash === `#/${ruta}`) this.render(); else location.hash = `/${ruta}`; }
     render() {
-        let ruta = location.hash.slice(2) || 'pedido';
-        if (['recepcion', 'cobros'].includes(ruta)) ruta = this.acceso.solicitar(ruta);
+        const ruta = resolverRuta(location.hash, this.acceso);
         const main = this.querySelector('main'); main.replaceChildren();
         this.querySelector('.salir').hidden = !this.acceso.sesion;
         for (const link of this.querySelectorAll('.navegacion a')) {
@@ -51,6 +51,7 @@ export class CafefeApp extends HTMLElement {
             titulo.textContent = ({pedido: 'Pedido público', cobros: 'Cobros', prohibido: 'Acceso no permitido'})[ruta] || 'Página no encontrada';
             mensaje.textContent = ruta === 'prohibido' ? 'Tu rol no permite acceder a esta pantalla.' :
                 integraciones[ruta] ? 'Punto de integración reservado para la pantalla de Erick.' : 'Usa el menú para continuar.';
+            titulo.className = 'contenido__cabecera'; mensaje.className = 'contenido__descripcion';
             main.append(titulo, mensaje);
         }
     }

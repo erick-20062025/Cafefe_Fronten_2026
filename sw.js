@@ -1,8 +1,8 @@
-const CACHE = 'cafefe-shell-v1';
+const CACHE = 'cafefe-shell-v2';
 const RECURSOS = [
     './index.html', './manifest.webmanifest',
     './src/boundary/app.js', './src/boundary/login-view.js', './src/boundary/recepcion-view.js',
-    './src/control/default_service.js', './src/control/acceso.js', './src/control/recepcion.js', './src/control/pwa.js',
+    './src/control/default_service.js', './src/control/acceso.js', './src/control/recepcion.js', './src/control/pwa.js', './src/control/navegacion.js',
     './src/entity/default_error.js', './src/recursos/estilos/principal.css', './src/recursos/estilos/personal.css',
     './src/recursos/iconos/icon-192.png', './src/recursos/iconos/icon-512.png'
 ];

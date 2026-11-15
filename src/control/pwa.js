@@ -10,5 +10,7 @@ export async function registrarPwa(boton, estado) {
     if (!('serviceWorker' in navigator)) { estado.textContent = 'Este navegador no admite el modo sin conexión.'; return; }
     try {
         await navigator.serviceWorker.register(new URL('../../sw.js', import.meta.url), { scope: new URL('../../', import.meta.url).pathname });
+        await navigator.serviceWorker.ready;
+        estado.textContent = 'Recursos de la aplicación disponibles sin conexión.';
     } catch { estado.textContent = 'No se pudo habilitar el modo sin conexión. Usa localhost o HTTPS.'; }
 }

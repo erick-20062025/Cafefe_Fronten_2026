@@ -1,5 +1,7 @@
 # Segundo entregable — estado del trabajo
 
+> Para el estado actualizado de la revisión visual, 38 pruebas y verificación del shell sin servidor, consultar [REVISION-INTEGRACION.md](REVISION-INTEGRACION.md). Los resultados siguientes describen la primera implementación.
+
 ## Repositorios y alcance
 Frontend real: `/home/diegoli/Documents/ppi 2026/Cafefe_Fronten_2026`.
 Se ejecutó `git fetch origin`; la principal es `origin/main`, no existe `origin/master` en este repositorio.
