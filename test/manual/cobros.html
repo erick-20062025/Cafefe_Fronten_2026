@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Prueba local de Cobros | Cafefe</title>
+    <link rel="stylesheet" href="../../src/recursos/estilos/principal.css">
+    <link rel="stylesheet" href="../../src/recursos/estilos/personal.css">
+    <link rel="stylesheet" href="../../src/recursos/estilos/cobros.css">
+    <script type="module" src="./cobros.js"></script>
+</head>
+<body>
+    <header class="encabezado">
+        <div class="marca"><span class="marca__simbolo" aria-hidden="true">C</span><span class="marca__nombre">CAFEFE</span></div>
+        <span>Prueba local de Cobros</span>
+    </header>
+    <main class="contenido cobros__prueba">
+        <section class="tarjeta cobros__configuracion">
+            <label for="cajero">Cajero de prueba</label>
+            <select id="cajero" disabled>
+                <option value="">Seleccioná un cajero</option>
+            </select>
+            <p id="estado" role="status">Cargando cajeros activos…</p>
+        </section>
+        <div id="vista"></div>
+    </main>
+</body>
+</html>

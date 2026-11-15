@@ -1,6 +1,7 @@
 import './login-view.js';
 import './recepcion-view.js';
 import './pedido_publico.js';
+import './cobros-view.js';
 import { SesionService } from '../control/sesion_service.js';
 import { OrdenService } from '../control/recepcion.js';
 import { Acceso, permite } from '../control/acceso.js';

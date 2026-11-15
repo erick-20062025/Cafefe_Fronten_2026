@@ -15,7 +15,7 @@ test('manifiesto e iconos locales con dimensiones correctas', async () => {
 async function worker() {
     const eventos={}; const almacen=new Map(); const borrados=[]; let redes=0;
     const cache={addAll:async urls=>{for(const url of urls) almacen.set(url,{url,cache:true});},match:async key=>almacen.get(key)};
-    const context={ URL, Set, caches:{open:async()=>cache,keys:async()=>['cafefe-shell-v0','cafefe-shell-v1','cafefe-shell-v2','cafefe-shell-v3','cafefe-shell-v4','cafefe-shell-v5','cafefe-shell-v6','cafefe-shell-v7','otro-proyecto'],delete:async key=>borrados.push(key)},
+    const context={ URL, Set, caches:{open:async()=>cache,keys:async()=>[...Array.from({length:11},(_,i)=>`cafefe-shell-v${i}`),'otro-proyecto'],delete:async key=>borrados.push(key)},
         self:{location:{href:'http://localhost:5501/sub/sw.js'}, clients:{claim:async()=>{}},addEventListener:(tipo,callback)=>eventos[tipo]=callback},
         fetch:async()=>{redes++;throw new Error('offline');} };
     vm.runInNewContext(await leer('sw.js'),context);
@@ -26,7 +26,7 @@ test('precache completo, aislamiento de alcance y limpieza por versión', async 
     const w=await worker();
     for(const url of w.almacen.keys()) await access(new URL(url.split('/sub/')[1],root));
     let tarea; w.eventos.activate({waitUntil:p=>tarea=p}); await tarea;
-    assert.deepEqual(w.borrados,['cafefe-shell-v0','cafefe-shell-v1','cafefe-shell-v2','cafefe-shell-v3','cafefe-shell-v4','cafefe-shell-v5','cafefe-shell-v6']);
+    assert.deepEqual(w.borrados,Array.from({length:11},(_,i)=>`cafefe-shell-v${i}`));
 });
 test('shell abre offline; API y mutaciones nunca se interceptan', async () => {
     const w=await worker(); let respuesta;
