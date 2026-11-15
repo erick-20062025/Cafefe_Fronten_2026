@@ -1,4 +1,4 @@
-const CACHE = 'cafefe-shell-v11';
+const CACHE = 'cafefe-shell-v15';
 const RECURSOS = [
     './index.html', './manifest.webmanifest',
     './src/boundary/app.js', './src/boundary/login-view.js', './src/boundary/recepcion-view.js',

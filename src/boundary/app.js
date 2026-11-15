@@ -66,8 +66,14 @@ export class CafefeApp extends HTMLElement {
                 return respuesta;
             }});
             main.append(vista);
+        } else if (ruta === 'cobros') {
+            const vista = document.createElement(integraciones.cobros);
+            vista.servicio = this.sesionApi;
+            vista.conSesion = true;
+            main.append(vista);
+        } else if (integraciones[ruta] && customElements.get(integraciones[ruta])) {
+            main.append(document.createElement(integraciones[ruta]));
         }
-        else if (integraciones[ruta] && customElements.get(integraciones[ruta])) main.append(document.createElement(integraciones[ruta]));
         else {
             const titulo = document.createElement('h1'); const mensaje = document.createElement('p');
             titulo.textContent = ({pedido: 'Pedido público', cobros: 'Cobros', prohibido: 'Acceso no permitido'})[ruta] || 'Página no encontrada';

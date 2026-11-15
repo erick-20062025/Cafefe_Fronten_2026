@@ -113,7 +113,10 @@ class CobrosView extends HTMLElement {
             const destino = this.querySelector(`[data-lista="${lista.id}"]`);
             const contador = this.querySelector(`[data-filtro="${lista.id}"] span`);
             try {
-                const registros = await this.servicio.solicitarJson(lista.ruta);
+                const ruta = this.conSesion
+                    ? (lista.id === "ordenes" ? "cobros/ordenes-pendientes" : `cobros/facturas/${lista.id}`)
+                    : lista.ruta;
+                const registros = await this.servicio.solicitarJson(ruta);
                 if (!Array.isArray(registros)) throw new Error("La API devolvió un listado inválido.");
                 if (contador) contador.textContent = registros.length;
                 destino.replaceChildren();
@@ -156,9 +159,10 @@ class CobrosView extends HTMLElement {
     }
 
     async abrirOrden(id) {
+        const ordenes = this.conSesion ? "cobros/ordenes" : "ordenes";
         const [filas, cajas] = await Promise.all([
-            this.servicio.solicitarJson(`ordenes/${id}/productos-facturables`),
-            this.servicio.solicitarJson("cajas"),
+            this.servicio.solicitarJson(`${ordenes}/${id}/productos-facturables`),
+            this.servicio.solicitarJson(this.conSesion ? "cobros/cajas" : "cajas"),
         ]);
         const activas = cajas.filter(caja => caja.activo === true);
         this.facturaAbierta = null;
@@ -173,7 +177,7 @@ class CobrosView extends HTMLElement {
             this.contenido.append(nodo("p", "No hay cajas activas."));
             return;
         }
-        if (!this.idEmpleadoRol) {
+        if (!this.conSesion && !this.idEmpleadoRol) {
             this.contenido.append(this.vacio("Seleccioná un cajero para crear la factura."));
             return;
         }
@@ -191,15 +195,15 @@ class CobrosView extends HTMLElement {
         for (const caja of activas) form.elements.caja.add(new Option(caja.nombre, caja.idCaja));
         form.onsubmit = evento => {
             evento.preventDefault();
-            this.ejecutar("Creando factura…", async () => {
+            return this.ejecutar("Creando factura…", async () => {
                 const cliente = form.elements.cliente.value.trim();
-                const datos = {
-                    idCaja: form.elements.caja.value,
-                    idEmpleadoRol: this.idEmpleadoRol,
-                    productos: filas.map(({ idOrdenProducto, precio }) => ({ idOrdenProducto, precio })),
-                    ...(cliente ? { cliente } : {}),
-                };
-                const factura = await this.servicio.solicitarJson("facturas", { metodo: "POST", datos });
+                const datos = { idCaja: form.elements.caja.value, ...(cliente ? { cliente } : {}) };
+                const ruta = this.conSesion ? `cobros/ordenes/${id}/facturas` : "facturas";
+                if (!this.conSesion) {
+                    datos.idEmpleadoRol = this.idEmpleadoRol;
+                    datos.productos = filas.map(({ idOrdenProducto, precio }) => ({ idOrdenProducto, precio }));
+                }
+                const factura = await this.servicio.solicitarJson(ruta, { metodo: "POST", datos });
                 this.facturaAbierta = factura.idFactura;
                 this.contenido.replaceChildren(nodo("p", `Factura creada: ${factura.idFactura}`));
                 await this.abrirFactura(factura.idFactura);
@@ -210,9 +214,9 @@ class CobrosView extends HTMLElement {
     }
 
     async abrirFactura(id) {
-        const ruta = `pagos/facturas/${id}`;
+        const ruta = this.rutaPago(id);
         const [factura, resumen, abonos] = await Promise.all([
-            this.servicio.solicitarJson(`facturas/${id}`),
+            this.servicio.solicitarJson(this.conSesion ? ruta : `facturas/${id}`),
             this.servicio.solicitarJson(`${ruta}/resumen`),
             this.servicio.solicitarJson(`${ruta}/abonos`),
         ]);
@@ -253,12 +257,16 @@ class CobrosView extends HTMLElement {
             acciones.append(this.botonImprimir());
         } else if (pendiente) {
             const situacion = ticket.querySelector(".cobros__situacion");
-            acciones.append(this.idEmpleadoRol
+            acciones.append(this.conSesion || this.idEmpleadoRol
                 ? this.formularioPago(id, resumen, { historial, importes, aviso, acciones, situacion })
                 : this.vacio("Seleccioná un cajero para registrar el abono."));
         } else {
             acciones.append(this.vacio("El saldo y el estado de la factura no coinciden. Actualizá para verificar."));
         }
+    }
+
+    rutaPago(id) {
+        return `${this.conSesion ? "cobros" : "pagos"}/facturas/${id}`;
     }
 
     resumenFactura(resumen) {
@@ -285,39 +293,64 @@ class CobrosView extends HTMLElement {
         form.innerHTML = `<h4>Registrar abono</h4>
             <div class="cobros__campos-pago">
                 <label>Forma de pago <select name="tipoPago"></select></label>
-                <label>Monto del abono ($) <input name="monto" type="number" step="0.01" min="0.01" required></label>
+                <label><span class="cobros__etiqueta-monto">Efectivo recibido ($)</span>
+                    <input name="monto" type="number" step="0.01" min="0.01" required>
+                </label>
                 <label class="cobros__referencia" hidden>Referencia <input name="referenciaExterna" maxlength="120"></label>
             </div>
+            <p class="cobros__cambio" aria-live="polite">Cambio a entregar <strong>$0.00</strong></p>
             <button type="submit" class="cafefe-boton">Registrar abono</button>`;
         const { monto: campoMonto, tipoPago: campoMetodo, referenciaExterna: campoReferencia } = form.elements;
         const enviar = form.querySelector("button");
+        const etiquetaMonto = form.querySelector(".cobros__etiqueta-monto");
+        const referencia = form.querySelector(".cobros__referencia");
+        const cambio = form.querySelector(".cobros__cambio");
+        const valorCambio = cambio.querySelector("strong");
         let confirmado = resumenInicial;
-        campoMonto.max = confirmado.saldo.toFixed(2);
+
+        function mostrarCambio() {
+            const recibido = precioEnCentavos(campoMonto.valueAsNumber) ?? 0;
+            const saldo = precioEnCentavos(confirmado.saldo);
+            valorCambio.textContent = dinero(Math.max(0, recibido - saldo) / 100);
+        }
+
+        function configurarMetodo() {
+            const efectivo = campoMetodo.value === "EFECTIVO";
+            etiquetaMonto.textContent = efectivo ? "Efectivo recibido ($)" : "Monto del abono ($)";
+            referencia.hidden = efectivo;
+            campoReferencia.required = !efectivo;
+            cambio.hidden = !efectivo;
+            if (efectivo) campoMonto.removeAttribute("max");
+            else campoMonto.max = confirmado.saldo.toFixed(2);
+            mostrarCambio();
+        }
+
         for (const [valor, etiqueta] of Object.entries(etiquetasPago)) {
             campoMetodo.add(new Option(etiqueta, valor));
         }
-        campoMetodo.onchange = () => {
-            const requiere = campoMetodo.value !== "EFECTIVO";
-            form.querySelector(".cobros__referencia").hidden = !requiere;
-            campoReferencia.required = requiere;
-        };
+        campoMetodo.onchange = configurarMetodo;
+        campoMonto.oninput = mostrarCambio;
+        configurarMetodo();
         form.onsubmit = async evento => {
             evento.preventDefault();
             if (enviar.disabled) return;
             let siguienteControl;
             await this.ejecutar("Registrando abono…", async () => {
-                const monto = campoMonto.valueAsNumber;
                 const tipoPago = campoMetodo.value;
-                const referencia = campoReferencia.value.trim();
-                const centavos = precioEnCentavos(monto);
-                if (!centavos || centavos > precioEnCentavos(campoMonto.max)) {
-                    throw new Error("Ingresá un monto válido que no supere el saldo.");
-                }
-                if (tipoPago !== "EFECTIVO" && !referencia) throw new Error("Ingresá la referencia del pago.");
-                const datos = { monto, tipoPago, ...(tipoPago === "EFECTIVO" ? {} : { referenciaExterna: referencia }) };
+                const efectivo = tipoPago === "EFECTIVO";
+                const referenciaExterna = campoReferencia.value.trim();
+                const recibido = precioEnCentavos(campoMonto.valueAsNumber);
+                const saldo = precioEnCentavos(confirmado.saldo);
+                if (!recibido) throw new Error("Ingresá un monto válido.");
+                if (!efectivo && recibido > saldo) throw new Error("El monto no puede superar el saldo.");
+                if (!efectivo && !referenciaExterna) throw new Error("Ingresá la referencia del pago.");
+                const aplicado = Math.min(recibido, saldo);
+                const monto = aplicado / 100;
+                const cambioCentavos = recibido - aplicado;
+                const datos = { monto, tipoPago, ...(efectivo ? {} : { referenciaExterna }) };
                 let resumen;
                 try {
-                    resumen = await this.servicio.solicitarJson(`pagos/facturas/${id}/abonos`, { metodo: "POST", datos });
+                    resumen = await this.servicio.solicitarJson(`${this.rutaPago(id)}/abonos`, { metodo: "POST", datos });
                 } catch (error) {
                     if (!error.estado || error.estado >= 500 || error.codigo === "RESPUESTA_INVALIDA") {
                         enviar.disabled = true;
@@ -334,8 +367,10 @@ class CobrosView extends HTMLElement {
                 historial.querySelector(".cobros__sin-abonos")?.remove();
                 historial.append(this.renglonImporte(etiquetasPago[tipoPago], monto));
                 importes.replaceChildren(...this.resumenFactura(resumen).children);
-                const metodo = tipoPago === "EFECTIVO" ? "en efectivo" : `con ${etiquetasPago[tipoPago]}`;
-                const registrado = `Registraste ${dinero(monto)} ${metodo}.`;
+                const metodo = efectivo ? "en efectivo" : `con ${etiquetasPago[tipoPago]}`;
+                const cambioConfirmado = cambioCentavos > 0
+                    ? ` Cambio a entregar: ${dinero(cambioCentavos / 100)}.` : "";
+                const registrado = `Registraste ${dinero(monto)} ${metodo}.${cambioConfirmado}`;
                 if (resumen.completado && resumen.saldo === 0) {
                     aviso.textContent = `${registrado} Factura pagada.`;
                     situacion.textContent = "PAGADA";
@@ -345,9 +380,9 @@ class CobrosView extends HTMLElement {
                     await this.actualizar();
                 } else {
                     aviso.textContent = `${registrado} Quedan ${dinero(resumen.saldo)} por pagar.`;
-                    campoMonto.max = resumen.saldo.toFixed(2);
                     campoMonto.value = "";
                     campoReferencia.value = "";
+                    configurarMetodo();
                     siguienteControl = campoMonto;
                 }
             });
