@@ -1,6 +1,7 @@
 import './login-view.js';
 import './recepcion-view.js';
 import './pedido_publico.js';
+import './cobros-view.js';
 import { Acceso, permite } from '../control/acceso.js';
 import { resolverRuta } from '../control/navegacion.js';
 import { registrarPwa } from '../control/pwa.js';
