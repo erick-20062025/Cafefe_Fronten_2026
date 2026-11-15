@@ -7,8 +7,15 @@
     <meta name="description" content="Interfaz web del sistema Cafefe.">
     <title>Cafefe | Inicio</title>
     <link rel="stylesheet" href="./src/recursos/estilos/principal.css">
+    <link rel="stylesheet" href="./src/recursos/estilos/personal.css">
+    <link rel="icon" href="./src/recursos/iconos/icon-192.png">
+    <link rel="manifest" href="./manifest.webmanifest">
+    <script type="module" src="./src/boundary/app.js"></script>
 </head>
 <body>
+    <cafefe-app></cafefe-app>
+    <noscript>Activa JavaScript para usar Cafefe.</noscript>
+    <template id="base-cafefe">
     <!-- Base visual temporal. La navegación se implementará con Web Components. -->
     <div class="aplicacion">
         <header class="encabezado">
@@ -16,7 +23,7 @@
                 <span class="marca__simbolo" aria-hidden="true">C</span>
                 <span class="marca__nombre">CAFEFE</span>
             </div>
-            <span class="encabezado__estado">Sistema de cafetería</span>
+            <span class="encabezado__estado">Sistema de cafetería</span><button class="instalar cafefe-boton" hidden>Instalar Cafefe</button>
         </header>
 
         <aside class="barra-lateral" aria-label="Secciones previstas">
@@ -68,10 +75,11 @@
             </section>
         </main>
 
-        <footer class="pie">
+        <footer class="pie"><span class="conexion" role="status"></span><span class="pwa-estado" role="status"></span>
             <span>Cafefe · Universidad de El Salvador</span>
             <span>Base visual inicial</span>
         </footer>
     </div>
+    </template>
 </body>
 </html>
