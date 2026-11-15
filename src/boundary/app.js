@@ -1,6 +1,8 @@
 import './login-view.js';
 import './recepcion-view.js';
 import './pedido_publico.js';
+import { SesionService } from '../control/sesion_service.js';
+import { OrdenService } from '../control/recepcion.js';
 import { Acceso, permite } from '../control/acceso.js';
 import { resolverRuta } from '../control/navegacion.js';
 import { registrarPwa } from '../control/pwa.js';
@@ -8,7 +10,10 @@ import { registrarPwa } from '../control/pwa.js';
 export const integraciones = { pedido: 'cafefe-pedido', cobros: 'cafefe-cobros' };
 export class CafefeApp extends HTMLElement {
     connectedCallback() {
-        this.acceso = new Acceso(); // Adaptador de autenticación pendiente de aprobación.
+        this.sesionApi = new SesionService();
+        this.acceso = new Acceso((nombre, uuid) => this.sesionApi.entrar(nombre, uuid),
+            () => this.sesionApi.cerrar(), () => this.sesionApi.recuperar());
+        this.restaurando = true;
         const plantilla = document.querySelector('#base-cafefe');
         this.append(plantilla.content.cloneNode(true));
         this.querySelector('.navegacion').innerHTML = `<a class="navegacion__item" href="#/pedido">Pedido público</a>
@@ -20,12 +25,16 @@ export class CafefeApp extends HTMLElement {
             const cierre = this.acceso.cerrar(); this.navegar('pedido'); this.render();
             try { await cierre; } catch { this.querySelector('.conexion').textContent = 'No se pudo confirmar el cierre en el servidor. Reconecta para volver a intentarlo.'; }
         };
+        this.addEventListener('sesion-vencida', () => { this.acceso.sesion = null; this.render(); });
         this.addEventListener('acceso-iniciado', event => this.navegar(event.detail));
         this.ruta = () => this.render(); this.conexion = () => {
             this.querySelector('.conexion').textContent = navigator.onLine ? '' : 'Sin conexión: la interfaz está disponible; las consultas requieren conexión.';
         };
         window.addEventListener('hashchange', this.ruta);
         window.addEventListener('online', this.conexion); window.addEventListener('offline', this.conexion);
+        this.acceso.recuperar().catch(() => {
+            this.querySelector('.conexion').textContent = 'No se pudo recuperar la sesión. Comprueba la conexión.';
+        }).finally(() => { this.restaurando = false; if (this.isConnected) this.render(); });
         this.conexion(); this.render(); registrarPwa(this.querySelector('.instalar'), this.querySelector('.pwa-estado'));
     }
     disconnectedCallback() {
@@ -43,9 +52,20 @@ export class CafefeApp extends HTMLElement {
             link.classList.toggle('navegacion__item--activo', destino === ruta);
             if (destino === ruta) link.setAttribute('aria-current', 'page'); else link.removeAttribute('aria-current');
         }
+        if (this.restaurando && ['login', 'recepcion', 'cobros'].includes(ruta)) {
+            main.textContent = 'Comprobando sesión…'; return;
+        }
         if (ruta === 'login') {
             const vista = document.createElement('cafefe-login'); vista.acceso = this.acceso; main.append(vista);
-        } else if (ruta === 'recepcion') main.append(document.createElement('cafefe-recepcion'));
+        } else if (ruta === 'recepcion') {
+            const vista = document.createElement('cafefe-recepcion');
+            vista.servicio = new OrdenService({urlApi:this.sesionApi.urlApi, solicitar:async (url, opciones) => {
+                const respuesta = await fetch(url, {...opciones, credentials:'include', cache:'no-store'});
+                if ([401,403].includes(respuesta.status)) this.dispatchEvent(new CustomEvent('sesion-vencida'));
+                return respuesta;
+            }});
+            main.append(vista);
+        }
         else if (integraciones[ruta] && customElements.get(integraciones[ruta])) main.append(document.createElement(integraciones[ruta]));
         else {
             const titulo = document.createElement('h1'); const mensaje = document.createElement('p');
