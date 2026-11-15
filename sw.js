@@ -1,9 +1,9 @@
-const CACHE = 'cafefe-shell-v10';
+const CACHE = 'cafefe-shell-v11';
 const RECURSOS = [
     './index.html', './manifest.webmanifest',
     './src/boundary/app.js', './src/boundary/login-view.js', './src/boundary/recepcion-view.js',
-    './src/control/default_service.js', './src/control/acceso.js', './src/control/recepcion.js', './src/control/pwa.js', './src/control/navegacion.js',
     './src/boundary/cobros-view.js', './src/recursos/estilos/cobros.css',
+    './src/control/default_service.js', './src/control/sesion_service.js', './src/control/acceso.js', './src/control/recepcion.js', './src/control/pwa.js', './src/control/navegacion.js',
     './src/boundary/pedido_publico.js', './src/control/pedido_publico_service.js', './src/entity/pedido_publico.js',
     './src/recursos/estilos/pedido_publico.css',
     './src/recursos/imagenes/bebidas-calientes.jpg', './src/recursos/imagenes/bebidas-frias.jpg',

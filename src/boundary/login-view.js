@@ -8,7 +8,7 @@ export class LoginView extends HTMLElement {
         <form><label>Nombre del empleado<input name="nombre" autocomplete="username" required maxlength="255"></label>
         <label>UUID del empleado<input name="uuid" type="password" autocomplete="off" required spellcheck="false" aria-describedby="login-ayuda"></label>
         <button class="cafefe-boton">Iniciar sesión</button><p class="mensaje" role="status" aria-live="polite"></p></form>
-        <p id="login-ayuda" class="ayuda">Utiliza el UUID asignado como contraseña. El acceso al servidor está pendiente de habilitación.</p>
+        <p id="login-ayuda" class="ayuda">Utiliza el UUID asignado como contraseña. Tu sesión se cerrará tras 30 minutos de inactividad.</p>
         </div></section>`;
         this.querySelector('form').addEventListener('submit', async event => {
             event.preventDefault();
