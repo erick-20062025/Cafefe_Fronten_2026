@@ -173,7 +173,10 @@ class CobrosView extends HTMLElement {
             this.contenido.append(this.vacio("La orden ya está facturada. Buscala en Facturas por cobrar."));
             return;
         }
-        this.contenido.append(this.productos(filas));
+        this.contenido.append(this.productos(filas),this.importes([
+            ['Subtotal',filas.reduce((s,p)=>s+Number(p.precioBase ?? p.precio),0)],
+            ['Descuentos',filas.reduce((s,p)=>s+Number(p.descuento || 0),0)]
+        ]));
         if (!activas.length) {
             this.contenido.append(nodo("p", "No hay cajas activas."));
             return;
@@ -242,7 +245,7 @@ class CobrosView extends HTMLElement {
             nodo("p", "Fecha de emisión: " + fecha(factura.fechaFacturacion)),
             nodo("p", factura.cliente ? `Cliente: ${factura.cliente}` : "Consumidor final"),
             this.productos(factura.productos),
-            nodo("h4", "Abonos"),
+
         );
         const historial = this.listaImportes(abonos.map(abono => [
             etiquetasPago[abono.tipoPago] || abono.tipoPago, abono.monto,
@@ -259,7 +262,7 @@ class CobrosView extends HTMLElement {
         const cambio=abonos.reduce((s,a)=>s+Number(a.cambioEntregado || 0),0);
         if(cambio>0) ticket.append(this.importes([["Cambio entregado",cambio]]));
         const importes = this.resumenFactura(resumen);
-        ticket.append(historial, importes);
+        ticket.append(nodo("h4","Abonos"),historial, importes);
 
         const aviso = nodo("p", "");
         aviso.className = "cobros__confirmacion";
@@ -421,7 +424,16 @@ class CobrosView extends HTMLElement {
     }
 
     productos(filas) {
-        return this.listaImportes(agruparProductos(filas).map(fila => [`${fila.cantidad} × ${fila.producto}${fila.caracteristicas ? " · " + fila.caracteristicas : ""} · Unitario ${dinero(fila.precio)}`, Number(fila.precio) * fila.cantidad]));
+        const tabla=document.createElement('table');tabla.className='cobros__productos';
+        const cabeza=document.createElement('thead'), encabezado=document.createElement('tr');
+        for(const texto of ['Cant.','Producto','Unitario','Importe'])encabezado.append(nodo('th',texto));
+        cabeza.append(encabezado);tabla.append(cabeza);
+        const cuerpo=document.createElement('tbody');
+        for(const fila of agruparProductos(filas)){
+            const renglon=document.createElement('tr');
+            renglon.append(nodo('td',String(fila.cantidad)),nodo('td',`${fila.producto}${fila.caracteristicas ? ' · '+fila.caracteristicas : ''}`),nodo('td',dinero(fila.precio)),nodo('td',dinero(Number(fila.precio)*fila.cantidad)));cuerpo.append(renglon);
+        }
+        tabla.append(cuerpo);return tabla;
     }
 
     listaImportes(filas) {

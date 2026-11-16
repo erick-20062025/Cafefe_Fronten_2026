@@ -13,7 +13,9 @@ const fotosPorCategoria = new Map([
     ["bebidas frias", "bebidas-frias.jpg"],
     ["bebidas heladas", "bebidas-frias.jpg"],
     ["comida", "comida.jpg"],
+    ["alimento", "comida.jpg"],
     ["postres", "postres.jpg"],
+    ["merch", "merch.jpeg"],
 ]);
 
 function normalizarNombre(nombre) {
@@ -43,6 +45,7 @@ const fotosPorProducto = new Map([
     ["pai de pina", "pai-pina.jpg"],
     ["brownie de chocolate", "brownie.jpg"],
     ["flan de caramelo", "flan.jpg"],
+    ["vaso coleccionable", "vaso-coleccionable.jpeg"],
 ]);
 
 export function fotoDeProducto(nombre, tipo) {

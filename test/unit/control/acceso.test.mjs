@@ -12,7 +12,7 @@ for (const estado of [401,403,404]) test(`credenciales incorrectas/inexistentes 
     await assert.rejects(acceso.entrar('Ana', uuid), error => !error.message.includes(uuid));
     assert.equal(acceso.sesion, null);
 });
-for (const respuesta of [null, {...empleado(['barista']), activo:false}, empleado([]), empleado(['administrador'])])
+for (const respuesta of [null, {...empleado(['barista']), activo:false}, empleado([]), empleado(['supervisor'])])
     test('rechaza empleado inactivo o sin roles permitidos', async () => {
         const acceso = new Acceso(async () => respuesta);
         await assert.rejects(acceso.entrar('Ana', uuid)); assert.equal(acceso.sesion, null);

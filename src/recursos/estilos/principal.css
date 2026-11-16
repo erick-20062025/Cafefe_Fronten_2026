@@ -11,9 +11,13 @@
     --radio: 14px;
 }
 
-* { box-sizing: border-box; }
+* {
+    box-sizing: border-box;
+}
 
-html { font-family: Arial, Helvetica, sans-serif; }
+html {
+    font-family: Arial, Helvetica, sans-serif;
+}
 
 body {
     margin: 0;
@@ -44,7 +48,11 @@ body {
     background: var(--color-primario);
 }
 
-.marca { display: flex; align-items: center; gap: 12px; }
+.marca {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
 
 .marca__simbolo {
     width: 40px;
@@ -58,8 +66,16 @@ body {
     font-weight: bold;
 }
 
-.marca__nombre { font-weight: 800; font-size: 21px; letter-spacing: 3px; }
-.encabezado__estado { font-size: 14px; opacity: 0.88; }
+.marca__nombre {
+    font-weight: 800;
+    font-size: 21px;
+    letter-spacing: 3px;
+}
+
+.encabezado__estado {
+    font-size: 14px;
+    opacity: 0.88;
+}
 
 .barra-lateral {
     grid-area: lateral;
@@ -79,7 +95,10 @@ body {
     letter-spacing: 2px;
 }
 
-.navegacion { display: grid; gap: 6px; }
+.navegacion {
+    display: grid;
+    gap: 6px;
+}
 
 .navegacion__item {
     display: block;
@@ -109,7 +128,9 @@ body {
     padding: 48px clamp(20px, 4vw, 64px) 64px;
 }
 
-.contenido__cabecera { max-width: 680px; }
+.contenido__cabecera {
+    max-width: 680px;
+}
 
 .contenido__etiqueta {
     margin: 0 0 12px;
@@ -119,7 +140,10 @@ body {
     letter-spacing: 2px;
 }
 
-h1 { margin: 0 0 12px; font-size: clamp(28px, 3vw, 42px); }
+h1 {
+    margin: 0 0 12px;
+    font-size: clamp(28px, 3vw, 42px);
+}
 
 .contenido__descripcion {
     margin: 0;
@@ -127,8 +151,14 @@ h1 { margin: 0 0 12px; font-size: clamp(28px, 3vw, 42px); }
     line-height: 1.7;
 }
 
-.resumen { margin-top: 42px; }
-h2 { margin: 0 0 20px; font-size: 19px; }
+.resumen {
+    margin-top: 42px;
+}
+
+h2 {
+    margin: 0 0 20px;
+    font-size: 19px;
+}
 
 .tarjetas {
     display: grid;
@@ -152,8 +182,17 @@ h2 { margin: 0 0 20px; font-size: 19px; }
     font-weight: bold;
 }
 
-.tarjeta h3 { margin: 0 0 10px; font-size: 17px; }
-.tarjeta p { margin: 0; color: var(--color-texto-suave); font-size: 14px; line-height: 1.6; }
+.tarjeta h3 {
+    margin: 0 0 10px;
+    font-size: 17px;
+}
+
+.tarjeta p {
+    margin: 0;
+    color: var(--color-texto-suave);
+    font-size: 14px;
+    line-height: 1.6;
+}
 
 .pie {
     grid-area: pie;
@@ -177,8 +216,14 @@ h2 { margin: 0 0 20px; font-size: 19px; }
             "pie";
     }
 
-    .encabezado { min-height: 76px; padding: 16px 20px; }
-    .encabezado__estado { display: none; }
+    .encabezado {
+        min-height: 76px;
+        padding: 16px 20px;
+    }
+
+    .encabezado__estado {
+        display: none;
+    }
 
     .barra-lateral {
         padding: 14px 18px;
@@ -187,34 +232,194 @@ h2 { margin: 0 0 20px; font-size: 19px; }
         border-bottom: 1px solid #e1dacb;
     }
 
-    .barra-lateral__titulo, .barra-lateral__nota { display: none; }
+    .barra-lateral__titulo,
+    .barra-lateral__nota {
+        display: none;
+    }
 
-    .navegacion { display: flex; overflow-x: auto; gap: 6px; }
-    .navegacion__item { flex: 0 0 auto; padding: 10px 12px; font-size: 13px; }
-    .contenido { padding: 32px 20px 48px; }
-    .tarjetas { grid-template-columns: 1fr; }
-    .pie { padding: 17px 20px; flex-wrap: wrap; }
+    .navegacion {
+        display: flex;
+        overflow-x: auto;
+        gap: 6px;
+    }
+
+    .navegacion__item {
+        flex: 0 0 auto;
+        padding: 10px 12px;
+        font-size: 13px;
+    }
+
+    .contenido {
+        padding: 32px 20px 48px;
+    }
+
+    .tarjetas {
+        grid-template-columns: 1fr;
+    }
+
+    .pie {
+        padding: 17px 20px;
+        flex-wrap: wrap;
+    }
+
+    .marca {
+        text-decoration: none;
+        color: inherit;
+        cursor: pointer;
+    }
+
+    .marca:focus-visible {
+        outline: 3px solid #005c49;
+        outline-offset: 4px;
+        border-radius: 8px;
+    }
 }
 
 /* Identidad Cafefe: logo oficial y extensiones comunes. */
-:root { --color-acento:#b98236; --sombra:0 12px 40px rgb(0 62 50 / .07); }
-body { line-height:1.5; }
-.encabezado { background:var(--color-superficie); color:var(--color-primario); border-bottom:1px solid var(--color-borde); }
-.marca__logo { width:64px; height:64px; object-fit:contain; }
-.barra-lateral { background:#eef2eb; }
-.navegacion__item { transition:background .15s; }
-.navegacion__item:hover { background:var(--color-secundario); color:var(--color-primario-oscuro); }
-.tarjeta { box-shadow:var(--sombra); }
-.personal-identidad { font-size:13px; color:var(--color-texto-suave); padding:0 12px; overflow-wrap:anywhere; }
-.sesion-control { margin-top:16px; }
-.login-panel { display:grid; grid-template-columns:minmax(220px,1fr) minmax(300px,1fr); gap:40px; align-items:center; }
-.login-logo { object-fit:contain; margin-bottom:24px; }
-cafefe-login label { margin:18px 0 8px; }
-cafefe-login .ayuda { margin:8px 0 20px; }
-.clave-control { display:flex; gap:8px; }
-.clave-control input { min-width:0; }
-.mostrar-clave { border:1px solid var(--color-borde); border-radius:9px; background:var(--color-fondo); color:var(--color-primario); cursor:pointer; padding:8px; font:inherit; }
-.cafefe-boton, button { touch-action:manipulation; }
-:focus-visible { outline:3px solid var(--color-acento); outline-offset:3px; }
-@media(max-width:1000px){ .login-panel { grid-template-columns:1fr; gap:8px; } .login-logo { width:85px; height:85px; margin-bottom:8px; } }
-@media(max-width:760px){ .personal-identidad { display:none; } .sesion-control { margin:0; flex-shrink:0; } .marca__logo { width:52px; height:52px; } }
+:root {
+    --color-acento: #b98236;
+    --sombra: 0 12px 40px rgb(0 62 50 / .07);
+}
+
+body {
+    line-height: 1.5;
+}
+
+.encabezado {
+    background: var(--color-superficie);
+    color: var(--color-primario);
+    border-bottom: 1px solid var(--color-borde);
+}
+
+.marca__logo {
+    width: 64px;
+    height: 64px;
+    object-fit: contain;
+}
+
+.barra-lateral {
+    background: #eef2eb;
+}
+
+.navegacion__item {
+    transition: background .15s;
+}
+
+.navegacion__item:hover {
+    background: var(--color-secundario);
+    color: var(--color-primario-oscuro);
+}
+
+.tarjeta {
+    box-shadow: var(--sombra);
+}
+
+.personal-identidad {
+    font-size: 13px;
+    color: var(--color-texto-suave);
+    padding: 0 12px;
+    overflow-wrap: anywhere;
+}
+
+.sesion-control {
+    margin-top: 16px;
+}
+
+.login-panel {
+    display: grid;
+    grid-template-columns: minmax(220px, 1fr) minmax(300px, 1fr);
+    gap: 40px;
+    align-items: center;
+}
+
+.login-logo {
+    object-fit: contain;
+    margin-bottom: 24px;
+}
+
+cafefe-login label {
+    margin: 18px 0 8px;
+}
+
+cafefe-login .ayuda {
+    margin: 8px 0 20px;
+}
+
+.clave-control {
+    display: flex;
+    gap: 8px;
+}
+
+.clave-control input {
+    min-width: 0;
+}
+
+.mostrar-clave {
+    border: 1px solid var(--color-borde);
+    border-radius: 9px;
+    background: var(--color-fondo);
+    color: var(--color-primario);
+    cursor: pointer;
+    padding: 8px;
+    font: inherit;
+}
+
+.cafefe-boton,
+button {
+    touch-action: manipulation;
+}
+
+:focus-visible {
+    outline: 3px solid var(--color-acento);
+    outline-offset: 3px;
+}
+
+@media(max-width:1000px) {
+    .login-panel {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    .login-logo {
+        width: 85px;
+        height: 85px;
+        margin-bottom: 8px;
+    }
+}
+
+@media(max-width:760px) {
+    .personal-identidad {
+        display: none;
+    }
+
+    .sesion-control {
+        margin: 0;
+        flex-shrink: 0;
+    }
+
+    .marca__logo {
+        width: 52px;
+        height: 52px;
+    }
+}
+/* Fondo decorativo local: no participa en eventos ni modifica contraste de tarjetas. */
+.contenido { position:relative; isolation:isolate; min-width:0; }
+.contenido::before { content:""; position:absolute; inset:0; z-index:-1; pointer-events:none; background:url('../imagenes/fondo-cafe.png') center top / 850px auto repeat; opacity:.10; }
+.menu-alternar,.menu-cerrar { display:none; }
+cafefe-gestion-ordenes { display:block; margin-top:32px; }
+cafefe-gestion-ordenes .tarjeta { margin:10px 0; }
+@media(max-width:768px){
+ .encabezado { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+ .menu-alternar,.menu-cerrar { display:block; min-width:44px; min-height:44px; }
+ .barra-lateral { display:none; width:auto; min-width:0; }
+ cafefe-app.menu-abierto .barra-lateral { display:flex; flex-direction:column; position:relative; padding:16px; }
+ .navegacion { display:flex; flex-direction:column; overflow:visible; white-space:normal; width:100%; }
+ .navegacion__item { white-space:normal; }
+ .personal-identidad { display:block; }
+ .contenido { padding:16px; width:100%; min-width:0; }
+ .contenido::before { background-size:560px auto; }
+ .aplicacion { min-width:0; }
+ .marca { min-width:0; }
+ .marca__nombre { font-size:1.2rem; }
+}
+@media print { .contenido::before,.menu-alternar,.menu-cerrar {display:none!important;} }

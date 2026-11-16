@@ -16,6 +16,8 @@ export default class DefaultService {
      * Recibe rutas relativas como "cajas" u "ordenes/pendientes".
      */
     async solicitarJson(ruta, { metodo = "GET", datos } = {}) {
+        if (metodo !== 'GET' && globalThis.navigator?.onLine === false)
+            throw new DefaultError("Esta acción requiere conexión. No se ha enviado ningún cambio.", {codigo:"SIN_CONEXION"});
         const url = new URL(ruta, this.urlApi);
         const opciones = {
             method: metodo,

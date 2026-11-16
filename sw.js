@@ -1,5 +1,6 @@
-const CACHE = 'cafefe-shell-v16';
+const CACHE = 'cafefe-shell-v21';
 const RECURSOS = [
+    './src/control/catalogo_offline.js', './src/control/menu_movil.js', './src/boundary/gestion-ordenes.js', './src/recursos/imagenes/fondo-cafe.png',
     './index.html', './src/entity/detalle_orden.js', './src/recursos/imagenes/marca/200LogoCafefe.png', './manifest.webmanifest',
     './src/boundary/app.js', './src/boundary/login-view.js', './src/boundary/recepcion-view.js',
     './src/boundary/cobros-view.js', './src/recursos/estilos/cobros.css',
@@ -17,7 +18,9 @@ const RECURSOS = [
     './src/recursos/imagenes/productos/cafe-caramelo.jpg', './src/recursos/imagenes/productos/budin-caramelo.jpg',
     './src/recursos/imagenes/productos/pai-pina.jpg',
     './src/entity/default_error.js', './src/recursos/estilos/principal.css', './src/recursos/estilos/personal.css',
-    './src/recursos/iconos/icon-192.png', './src/recursos/iconos/icon-512.png'
+    './src/recursos/iconos/icon-192.png', './src/recursos/iconos/icon-512.png',
+    "./src/recursos/imagenes/merch.jpeg",
+"./src/recursos/imagenes/productos/vaso-coleccionable.jpeg"
 ];
 const BASE = new URL('./', self.location.href);
 const PERMITIDOS = new Set(RECURSOS.map(ruta => new URL(ruta, BASE).href));

@@ -19,15 +19,19 @@
     <template id="base-cafefe">
     <!-- Base visual temporal. La navegación se implementará con Web Components. -->
     <div class="aplicacion">
-        <header class="encabezado">
-            <div class="marca" aria-label="Cafefe">
-                <img class="marca__logo" src="./src/recursos/imagenes/marca/200LogoCafefe.png" alt="Logo de Cafefe" width="64" height="64">
-                <span class="marca__nombre">CAFEFE</span>
-            </div>
+        <header class="encabezado"><button class="menu-alternar" type="button" aria-label="Abrir o cerrar menú" aria-expanded="false" aria-controls="menu-principal">☰</button>
+            <a class="marca" href="#/pedido" aria-label="Ir al inicio de Cafefe">
+    <img class="marca__logo"
+         src="./src/recursos/imagenes/marca/200LogoCafefe.png"
+         alt=""
+         width="64"
+         height="64">
+    <span class="marca__nombre">CAFEFE</span>
+</a>
             <span class="encabezado__estado">Sistema de cafetería</span><button class="instalar cafefe-boton" hidden>Instalar Cafefe</button>
         </header>
 
-        <aside class="barra-lateral" aria-label="Secciones previstas">
+        <aside class="barra-lateral" id="menu-principal" aria-label="Navegación principal"><button class="menu-cerrar" type="button" aria-label="Cerrar menú">Cerrar ×</button>
             <p class="barra-lateral__titulo">MENÚ</p>
             <nav class="navegacion" aria-label="Estructura del sistema">
                 <span class="navegacion__item navegacion__item--activo" aria-current="page">Inicio</span>
