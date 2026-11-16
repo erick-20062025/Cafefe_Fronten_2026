@@ -191,3 +191,15 @@ cafefe-cobros { display: block; }
     body.imprimiendo-cobro .cobros__ticket { margin: 0; color: #000; }
     body.imprimiendo-cobro .cobros__renglones li { break-inside: avoid; }
 }
+
+.cobros__ticket { border:1px solid var(--color-borde); padding:24px; background:white; border-radius:14px; }
+.cobros__ticket > img { display:block; margin:0 auto 12px; object-fit:contain; }
+.cobros__ticket > h2 { text-align:center; color:var(--color-primario); }
+.cobros__ticket > p { overflow-wrap:anywhere; }
+@media print {
+ @page { size:A5; margin:10mm; }
+ .cobros__ticket { color:#111; box-shadow:none; border:0; padding:0; width:100%; font-size:11px; }
+ .cobros__ticket img { width:70px; height:70px; }
+ .cobros__renglones li { break-inside:avoid; }
+ .cobros__ticket p { margin:5px 0; }
+}

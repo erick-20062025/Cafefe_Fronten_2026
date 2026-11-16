@@ -1,3 +1,4 @@
+import { agruparProductos } from '../entity/detalle_orden.js';
 import DefaultService from "../control/default_service.js";
 import { precioEnCentavos } from "../entity/pedido_publico.js";
 
@@ -228,9 +229,17 @@ class CobrosView extends HTMLElement {
             && precioEnCentavos(resumen.saldo) > 0;
         const ticket = nodo("article", "");
         ticket.className = "cobros__ticket";
+        const logo=document.createElement('img'); logo.src='./src/recursos/imagenes/marca/200LogoCafefe.png'; logo.alt='Cafefe'; logo.width=90; logo.height=90;
+        ticket.append(logo, nodo('h2','Cafefe'), nodo('p','Comprobante de consumo'));
+        const ordenes=[...new Set((factura.productos || []).map(p=>p.idOrden).filter(Boolean))];
+        for (const orden of ordenes) {
+            const detalle=factura.productos.find(p=>p.idOrden===orden);
+            ticket.append(nodo('p',`Orden: ${orden}`),nodo('p',`Fecha de orden: ${fecha(detalle.fechaOrden) || 'No registrada'}`),
+                nodo('p',`Atendido por: ${detalle.atendidoPor || 'No registrado'}`));
+        }
         ticket.append(
             this.encabezadoDetalle("Factura", factura.idFactura, pagada ? "PAGADA" : pendiente ? "PENDIENTE" : "REVISAR SALDO"),
-            nodo("p", fecha(factura.fechaFacturacion)),
+            nodo("p", "Fecha de emisión: " + fecha(factura.fechaFacturacion)),
             nodo("p", factura.cliente ? `Cliente: ${factura.cliente}` : "Consumidor final"),
             this.productos(factura.productos),
             nodo("h4", "Abonos"),
@@ -244,6 +253,11 @@ class CobrosView extends HTMLElement {
             historial.append(vacio);
         }
 
+        const subtotal=(factura.productos || []).reduce((s,p)=>s+Number(p.precioBase ?? p.precio),0);
+        const descuento=(factura.productos || []).reduce((s,p)=>s+Number(p.descuento || 0),0);
+        ticket.append(this.importes([["Subtotal",subtotal],["Descuentos",descuento]]));
+        const cambio=abonos.reduce((s,a)=>s+Number(a.cambioEntregado || 0),0);
+        if(cambio>0) ticket.append(this.importes([["Cambio entregado",cambio]]));
         const importes = this.resumenFactura(resumen);
         ticket.append(historial, importes);
 
@@ -347,7 +361,7 @@ class CobrosView extends HTMLElement {
                 const aplicado = Math.min(recibido, saldo);
                 const monto = aplicado / 100;
                 const cambioCentavos = recibido - aplicado;
-                const datos = { monto, tipoPago, ...(efectivo ? {} : { referenciaExterna }) };
+                const datos = { monto, tipoPago, ...(efectivo ? { efectivoRecibido: recibido / 100 } : { referenciaExterna }) };
                 let resumen;
                 try {
                     resumen = await this.servicio.solicitarJson(`${this.rutaPago(id)}/abonos`, { metodo: "POST", datos });
@@ -364,6 +378,9 @@ class CobrosView extends HTMLElement {
                 }
 
                 confirmado = resumen;
+                if (efectivo && cambioCentavos > 0) {
+                    this.contenido.querySelector('.cobros__ticket').append(this.importes([["Cambio entregado",cambioCentavos/100]]));
+                }
                 historial.querySelector(".cobros__sin-abonos")?.remove();
                 historial.append(this.renglonImporte(etiquetasPago[tipoPago], monto));
                 importes.replaceChildren(...this.resumenFactura(resumen).children);
@@ -404,7 +421,7 @@ class CobrosView extends HTMLElement {
     }
 
     productos(filas) {
-        return this.listaImportes(filas.map(fila => [fila.producto, fila.precio]));
+        return this.listaImportes(agruparProductos(filas).map(fila => [`${fila.cantidad} × ${fila.producto}${fila.caracteristicas ? " · " + fila.caracteristicas : ""} · Unitario ${dinero(fila.precio)}`, Number(fila.precio) * fila.cantidad]));
     }
 
     listaImportes(filas) {

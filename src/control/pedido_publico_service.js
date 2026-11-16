@@ -1,7 +1,7 @@
-import DefaultService from "./default_service.js";
+import { SesionService } from "./sesion_service.js";
 
 export default class PedidoPublicoService {
-    constructor({ api = new DefaultService() } = {}) {
+    constructor({ api = new SesionService() } = {}) {
         this.api = api;
     }
 
@@ -56,6 +56,8 @@ export default class PedidoPublicoService {
             return null;
         }
     }
+
+    cotizar(pedido) { return this.api.solicitarJson("ordenes/cotizacion", {metodo:"POST",datos:pedido}); }
 
     enviar(pedido) {
         return this.api.solicitarJson("ordenes/publicas", { metodo: "POST", datos: pedido });

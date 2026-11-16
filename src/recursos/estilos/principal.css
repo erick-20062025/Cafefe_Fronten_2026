@@ -1,9 +1,9 @@
 /* Cafefe: estilos generales, sin librerías externas. */
 :root {
-    --color-primario: #2f5d50;
-    --color-primario-oscuro: #23483d;
-    --color-secundario: #d9c7a3;
-    --color-fondo: #f7f6f2;
+    --color-primario: #005443;
+    --color-primario-oscuro: #003e32;
+    --color-secundario: #d8b883;
+    --color-fondo: #f6f5ef;
     --color-superficie: #ffffff;
     --color-texto: #26312d;
     --color-texto-suave: #68736f;
@@ -195,3 +195,26 @@ h2 { margin: 0 0 20px; font-size: 19px; }
     .tarjetas { grid-template-columns: 1fr; }
     .pie { padding: 17px 20px; flex-wrap: wrap; }
 }
+
+/* Identidad Cafefe: logo oficial y extensiones comunes. */
+:root { --color-acento:#b98236; --sombra:0 12px 40px rgb(0 62 50 / .07); }
+body { line-height:1.5; }
+.encabezado { background:var(--color-superficie); color:var(--color-primario); border-bottom:1px solid var(--color-borde); }
+.marca__logo { width:64px; height:64px; object-fit:contain; }
+.barra-lateral { background:#eef2eb; }
+.navegacion__item { transition:background .15s; }
+.navegacion__item:hover { background:var(--color-secundario); color:var(--color-primario-oscuro); }
+.tarjeta { box-shadow:var(--sombra); }
+.personal-identidad { font-size:13px; color:var(--color-texto-suave); padding:0 12px; overflow-wrap:anywhere; }
+.sesion-control { margin-top:16px; }
+.login-panel { display:grid; grid-template-columns:minmax(220px,1fr) minmax(300px,1fr); gap:40px; align-items:center; }
+.login-logo { object-fit:contain; margin-bottom:24px; }
+cafefe-login label { margin:18px 0 8px; }
+cafefe-login .ayuda { margin:8px 0 20px; }
+.clave-control { display:flex; gap:8px; }
+.clave-control input { min-width:0; }
+.mostrar-clave { border:1px solid var(--color-borde); border-radius:9px; background:var(--color-fondo); color:var(--color-primario); cursor:pointer; padding:8px; font:inherit; }
+.cafefe-boton, button { touch-action:manipulation; }
+:focus-visible { outline:3px solid var(--color-acento); outline-offset:3px; }
+@media(max-width:1000px){ .login-panel { grid-template-columns:1fr; gap:8px; } .login-logo { width:85px; height:85px; margin-bottom:8px; } }
+@media(max-width:760px){ .personal-identidad { display:none; } .sesion-control { margin:0; flex-shrink:0; } .marca__logo { width:52px; height:52px; } }
