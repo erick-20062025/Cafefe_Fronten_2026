@@ -203,3 +203,31 @@ cafefe-cobros { display: block; }
  .cobros__renglones li { break-inside:avoid; }
  .cobros__ticket p { margin:5px 0; }
 }
+
+@media print {
+ @page { size:A5; margin:7mm; }
+ html,body { height:auto!important; min-height:0!important; }
+ body.imprimiendo-cobro .cobros__ticket { font:10pt/1.15 Arial,sans-serif; padding:0!important; border:0!important; border-radius:0; max-width:none; }
+ body.imprimiendo-cobro .cobros__ticket > img { width:45px;height:45px;margin:0 auto 3px; }
+ body.imprimiendo-cobro .cobros__ticket h2,body.imprimiendo-cobro .cobros__ticket h3,body.imprimiendo-cobro .cobros__ticket h4 { font-size:11pt;margin:4px 0;line-height:1.15; }
+ body.imprimiendo-cobro .cobros__ticket p { margin:3px 0;font-size:9pt; }
+ body.imprimiendo-cobro .cobros__ticket ul,body.imprimiendo-cobro .cobros__ticket dl { margin:4px 0;padding:0; }
+ body.imprimiendo-cobro .cobros__renglones li { padding:3px 0;gap:8px;break-inside:avoid; }
+ body.imprimiendo-cobro .cobros__importes > div { padding:2px 0;break-inside:avoid; }
+ body.imprimiendo-cobro .cobros__ticket * { letter-spacing:normal; }
+ body.imprimiendo-cobro .cobros__situacion { padding:2px 4px; }
+}
+
+.cobros__productos { border-collapse:collapse;width:100%;table-layout:fixed;font-size:.9rem; }
+.cobros__productos th,.cobros__productos td { padding:6px 3px;border-bottom:1px solid #ddd;vertical-align:top;overflow-wrap:anywhere;text-align:left; }
+.cobros__productos th:first-child {width:12%;}
+.cobros__productos th:nth-child(2) {width:44%;}
+.cobros__productos td:nth-child(n+3),.cobros__productos th:nth-child(n+3) {text-align:right;}
+@media print { .cobros__productos {font-size:9pt;} .cobros__productos td,.cobros__productos th {padding:3px 2px;} .cobros__productos tr {break-inside:avoid;} .cobros__productos thead {display:table-header-group;} }
+
+@media print {
+ body.imprimiendo-cobro .cobros__identidad { display:block!important; width:100%; margin:4px 0; padding:0 0 4px; }
+ body.imprimiendo-cobro .cobros__identidad h3 { display:inline; margin-right:8px; }
+ body.imprimiendo-cobro .cobros__id { display:block; width:100%; white-space:normal; overflow-wrap:break-word; }
+ body.imprimiendo-cobro .cobros__importes { background:transparent; border-radius:0; }
+}

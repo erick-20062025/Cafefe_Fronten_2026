@@ -1,11 +1,17 @@
+import { CatalogoOffline } from "./catalogo_offline.js";
 import { SesionService } from "./sesion_service.js";
 
 export default class PedidoPublicoService {
-    constructor({ api = new SesionService() } = {}) {
-        this.api = api;
+    constructor({ api = new SesionService(), catalogo = new CatalogoOffline() } = {}) {
+        this.api = api; this.catalogo=catalogo;
     }
 
-    async listarCategorias() {
+    listarCategorias() { return this.catalogo.consultar("categorias","categorias",()=>this.cargarCategorias()); }
+    listarProductos(id) { return this.catalogo.consultar("productos:"+id,"productos",()=>this.cargarProductos(id)); }
+    aviso(id) { return this.catalogo.aviso(id ? "productos:"+id : "categorias"); }
+    invalidar() { this.catalogo.invalidar(); }
+
+    async cargarCategorias() {
         const categorias = await this.api.solicitarJson("tipos-producto");
         if (!Array.isArray(categorias)) {
             throw new Error("La API no devolvió una lista de categorías.");
@@ -13,7 +19,7 @@ export default class PedidoPublicoService {
         return categorias;
     }
 
-    async listarProductos(idCategoria) {
+    async cargarProductos(idCategoria) {
         const ruta = `producto-tipos-producto/tipos-producto/${encodeURIComponent(idCategoria)}`;
         const relaciones = await this.api.solicitarJson(ruta);
         if (!Array.isArray(relaciones)) {

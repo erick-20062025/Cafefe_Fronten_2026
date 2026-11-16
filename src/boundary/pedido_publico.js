@@ -73,19 +73,28 @@ class PedidoPublico extends HTMLElement {
         this.servicio = new PedidoPublicoService();
         this.mostrarCarrito();
         this.cargarCategorias();
+        this.cambioRed=()=>{this.servicio.invalidar();this.solicitudCategorias=(this.solicitudCategorias||0)+1;this.solicitudProductos++;this.mostrarCarrito();this.cargarCategorias();if(this.categoria && !this.elemento('seccion-productos').hidden)this.cargarProductos();};
+        window.addEventListener('online',this.cambioRed);window.addEventListener('offline',this.cambioRed);
+        this.reintentoRed=setInterval(()=>{if(navigator.onLine!==false && !document.hidden && (this.servicio.aviso() || this.servicio.aviso(this.categoria?.idTipoProducto)))this.cambioRed();},30000);
     }
+    disconnectedCallback(){ clearInterval(this.reintentoRed);window.removeEventListener('online',this.cambioRed);window.removeEventListener('offline',this.cambioRed);this.solicitudCategorias++;this.solicitudProductos++; }
+
 
     elemento(id) {
         return this.shadowRoot.getElementById(id);
     }
 
     async cargarCategorias() {
+        const version=this.solicitudCategorias=(this.solicitudCategorias||0)+1;
         const estado = this.elemento("estado-categorias");
         const reintentar = this.elemento("reintentar-categorias");
         reintentar.hidden = true;
         estado.textContent = "Cargando categorías…";
         try {
-            this.mostrarCategorias(await this.servicio.listarCategorias());
+            const categorias=await this.servicio.listarCategorias();
+            if(version!==this.solicitudCategorias)return;
+            this.mostrarCategorias(categorias);
+            estado.textContent=this.servicio.aviso() || estado.textContent;
         } catch (error) {
             const codigo = error.estado ? ` (HTTP ${error.estado})` : "";
             estado.textContent = `No se pudieron cargar las categorías${codigo}. ${error.detalle || error.message}`;
@@ -155,7 +164,7 @@ class PedidoPublico extends HTMLElement {
             if (solicitud !== this.solicitudProductos) return;
 
             this.productos = productos.filter(producto => producto.activo === true);
-            estado.textContent = this.productos.length ? "" : "Esta categoría no tiene productos disponibles.";
+            estado.textContent = this.servicio.aviso(idCategoria) || (this.productos.length ? "" : "Esta categoría no tiene productos disponibles.");
             this.mostrarProductos();
         } catch (error) {
             if (solicitud !== this.solicitudProductos) return;
@@ -216,7 +225,7 @@ class PedidoPublico extends HTMLElement {
         const unidades = totalUnidades(this.carrito);
         this.elemento("unidades").textContent = unidades
             ? `${unidades} ${unidades === 1 ? "unidad" : "unidades"}` : "Aún no agregas productos.";
-        this.elemento("enviar").disabled = this.enviando || unidades === 0;
+        this.elemento("enviar").disabled = this.enviando || navigator.onLine===false || unidades === 0;
         const total = this.elemento("total");
         const estimado = totalEstimado(this.carrito);
         total.hidden = unidades === 0 || estimado === null;
@@ -264,6 +273,7 @@ class PedidoPublico extends HTMLElement {
         const version = this.versionCotizacion = (this.versionCotizacion || 0) + 1;
         const salida = this.elemento('cotizacion');
         if (!this.carrito.size) { salida.textContent=''; return; }
+        if(navigator.onLine===false){salida.textContent='Precios orientativos sin conexión. No se pueden enviar pedidos.';return;}
         if (!this.servicio?.cotizar || this.enviando) return;
         salida.textContent = 'Calculando promociones vigentes…';
         try {
@@ -277,6 +287,7 @@ class PedidoPublico extends HTMLElement {
     async enviar(evento) {
         evento.preventDefault();
         if (this.enviando) return;
+        if (navigator.onLine===false){this.resultado.textContent='Necesitas conexión para enviar un pedido. Los precios guardados son orientativos.';return;}
         let pedido;
         try {
             pedido = armarPedido(this.nombre.value, this.carrito);
@@ -292,6 +303,7 @@ class PedidoPublico extends HTMLElement {
         this.resultado.textContent = "Enviando pedido…";
         try {
             const orden = await this.servicio.enviar(pedido);
+            this.dispatchEvent(new CustomEvent("pedido-registrado",{bubbles:true,composed:true}));
             this.carrito.clear();
             this.nombre.value = "";
             this.resultado.textContent = orden?.idOrden
