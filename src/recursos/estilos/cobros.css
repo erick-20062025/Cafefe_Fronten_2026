@@ -155,6 +155,19 @@ cafefe-cobros { display: block; }
     gap: 0.65rem;
 }
 .cobros__referencia { grid-column: 1 / -1; }
+.cobros__cambio {
+    margin: 0;
+    padding: 0.65rem 0.8rem;
+    border-radius: 0.45rem;
+    background: var(--color-fondo);
+    color: var(--color-primario-oscuro);
+}
+.cobros__cambio:not([hidden]) {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+.cobros__cambio strong { font-variant-numeric: tabular-nums; }
 
 @media (max-width: 770px) {
     .cobros__columnas, .cobros__configuracion, .cobros__campos-pago { grid-template-columns: minmax(0, 1fr); }
