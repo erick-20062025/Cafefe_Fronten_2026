@@ -13,7 +13,7 @@ plantilla.innerHTML = `
     <div class="pedido">
         <div class="catalogo">
             <section id="vista-tipos" aria-labelledby="pedido-titulo">
-                <h1 id="pedido-titulo" tabindex="-1">Haz tu pedido</h1>
+                <p class="etiqueta">HECHO PARA TU MOMENTO</p><h1 id="pedido-titulo" tabindex="-1">¿Qué se te antoja hoy?</h1>
                 <h2>Tipos de producto</h2>
                 <p id="estado-categorias" role="status"></p>
                 <button id="reintentar-categorias" type="button" hidden>Reintentar categorías</button>
@@ -31,7 +31,7 @@ plantilla.innerHTML = `
             <h2 id="titulo-resumen">Tu carrito</h2>
             <p id="unidades" role="status">Aún no agregas productos.</p>
             <ul id="carrito"></ul>
-            <p id="total" class="total" hidden></p>
+            <div id="cotizacion" aria-live="polite"></div><p id="total" class="total" hidden></p>
             <form id="envio">
                 <label for="nombre">Tu nombre</label>
                 <input id="nombre" type="text" autocomplete="name" maxlength="${MAX_NOMBRE}" required>
@@ -186,7 +186,9 @@ class PedidoPublico extends HTMLElement {
             agregar.setAttribute("aria-label", "Agregar " + nombreProducto);
             agregar.disabled = this.enviando || precio === null;
             acciones.append(importe, agregar);
-            cuerpo.append(nombre, acciones);
+            const caracteristicas = document.createElement('p'); caracteristicas.className='caracteristicas';
+            caracteristicas.textContent = producto.caracteristicas || producto.comentarios || '';
+            cuerpo.append(nombre, caracteristicas, acciones);
             fila.append(foto, cuerpo);
             return fila;
         }));
@@ -201,6 +203,7 @@ class PedidoPublico extends HTMLElement {
         }
         this.carrito.set(id, {
             nombre: producto.nombre.trim(),
+            caracteristicas: producto.caracteristicas || "",
             cantidad: cantidad + 1,
             precioCentavos: precioEnCentavos(producto.precioSugerido),
         });
@@ -209,6 +212,7 @@ class PedidoPublico extends HTMLElement {
     }
 
     mostrarCarrito() {
+        this.actualizarCotizacion();
         const unidades = totalUnidades(this.carrito);
         this.elemento("unidades").textContent = unidades
             ? `${unidades} ${unidades === 1 ? "unidad" : "unidades"}` : "Aún no agregas productos.";
@@ -222,7 +226,7 @@ class PedidoPublico extends HTMLElement {
         lista.replaceChildren(...Array.from(this.carrito, ([id, fila]) => {
             const li = document.createElement("li");
             const nombre = document.createElement("span");
-            nombre.textContent = fila.nombre;
+            nombre.textContent = fila.nombre + (fila.caracteristicas ? " · " + fila.caracteristicas : "");
             if (fila.precioCentavos !== null) {
                 nombre.textContent += " · " + formatoPrecio.format(fila.precioCentavos / 100);
             }
@@ -256,6 +260,20 @@ class PedidoPublico extends HTMLElement {
         }));
     }
 
+    async actualizarCotizacion() {
+        const version = this.versionCotizacion = (this.versionCotizacion || 0) + 1;
+        const salida = this.elemento('cotizacion');
+        if (!this.carrito.size) { salida.textContent=''; return; }
+        if (!this.servicio?.cotizar || this.enviando) return;
+        salida.textContent = 'Calculando promociones vigentes…';
+        try {
+            const resumen = await this.servicio.cotizar(armarPedido('Vista previa', this.carrito));
+            if (version !== this.versionCotizacion || !this.isConnected) return;
+            salida.textContent = `Subtotal ${formatoPrecio.format(resumen.subtotal)} · Descuentos ${formatoPrecio.format(resumen.descuento)} · Total ${formatoPrecio.format(resumen.total)}`;
+            this.elemento('total').textContent = 'Importe definitivo confirmado al registrar la orden.';
+        } catch { if (version === this.versionCotizacion) salida.textContent = 'No se pudo actualizar la cotización. El servidor confirmará el total al enviar.'; }
+    }
+
     async enviar(evento) {
         evento.preventDefault();
         if (this.enviando) return;
@@ -277,7 +295,7 @@ class PedidoPublico extends HTMLElement {
             this.carrito.clear();
             this.nombre.value = "";
             this.resultado.textContent = orden?.idOrden
-                ? `Pedido recibido. Número de orden: ${orden.idOrden}.`
+                ? `Pedido recibido. Número de orden: ${orden.idOrden}. Total confirmado: ${formatoPrecio.format(orden.total)}. Descuento: ${formatoPrecio.format(orden.descuento || 0)}.`
                 : "Pedido recibido.";
         } catch (error) {
             this.resultado.textContent = error.detalle || error.message;

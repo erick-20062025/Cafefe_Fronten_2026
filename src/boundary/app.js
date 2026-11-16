@@ -17,12 +17,13 @@ export class CafefeApp extends HTMLElement {
         this.restaurando = true;
         const plantilla = document.querySelector('#base-cafefe');
         this.append(plantilla.content.cloneNode(true));
-        this.querySelector('.navegacion').innerHTML = `<a class="navegacion__item" href="#/pedido">Pedido público</a>
-        <a class="navegacion__item" href="#/recepcion">Recepción</a><a class="navegacion__item" href="#/cobros">Cobros</a>
-        <a class="navegacion__item" href="#/login">Acceso del personal</a><button class="salir cafefe-boton" hidden>Cerrar sesión</button>`;
+        this.querySelector('.navegacion').innerHTML = `<a class="navegacion__item" href="#/pedido">Órdenes</a>
+        <a class="navegacion__item" href="#/recepcion">Recepción de órdenes</a><a class="navegacion__item" href="#/cobros">Cobros</a>
+        <button class="sesion-control cafefe-boton" type="button">Iniciar sesión</button><p class="personal-identidad" aria-live="polite"></p>`;
         this.querySelector('.barra-lateral__nota').textContent = 'Acceso del personal según roles del servidor.';
         this.querySelector('.pie span:last-child').textContent = 'Segundo entregable · PPI115';
-        this.querySelector('.salir').onclick = async () => {
+        this.querySelector('.sesion-control').onclick = async () => {
+            if (!this.acceso.sesion) { this.navegar('login'); return; }
             const cierre = this.acceso.cerrar(); this.navegar('pedido'); this.render();
             try { await cierre; } catch { this.querySelector('.conexion').textContent = 'No se pudo confirmar el cierre en el servidor. Reconecta para volver a intentarlo.'; }
         };
@@ -46,7 +47,8 @@ export class CafefeApp extends HTMLElement {
     render() {
         const ruta = resolverRuta(location.hash, this.acceso);
         const main = this.querySelector('main'); main.replaceChildren();
-        this.querySelector('.salir').hidden = !this.acceso.sesion;
+        this.querySelector('.sesion-control').textContent = this.acceso.sesion ? 'Cerrar sesión' : 'Iniciar sesión';
+        this.querySelector('.personal-identidad').textContent = this.acceso.sesion ? `${this.acceso.sesion.nombre} · ${this.acceso.sesion.roles.join(', ')}` : 'Pedidos abiertos al público';
         for (const link of this.querySelectorAll('.navegacion a')) {
             const destino = link.hash.slice(2);
             link.hidden = Boolean(this.acceso.sesion && ['recepcion', 'cobros'].includes(destino) && !permite(this.acceso.sesion, destino));

@@ -145,3 +145,14 @@ button:focus-visible, input:focus-visible { outline: 2px solid #2f5d50; outline-
     .pedido { grid-template-columns: 1fr; }
     .resumen { position: static; }
 }
+
+:host { --verde:#005443; --fondo:#f6f5ef; --borde:#e2e8df; font-family:inherit; color:#26312d; }
+.etiqueta { color:var(--verde); font-size:12px; letter-spacing:.16em; font-weight:700; }
+.pedido h1 { font-size:clamp(28px,4vw,42px); letter-spacing:-.03em; }
+.categorias button, .producto { border:1px solid var(--borde); border-radius:18px; overflow:hidden; box-shadow:0 8px 24px #003e320c; }
+.categorias button { transition:transform .15s; }
+.categorias button:hover { transform:translateY(-3px); }
+.resumen { border-radius:20px; border:1px solid var(--borde); box-shadow:0 12px 40px #003e3212; }
+.caracteristicas { font-size:13px; color:#596c61; margin:8px 0; }
+#cotizacion { font-size:14px; line-height:1.8; border-top:1px solid var(--borde); margin-top:20px; padding-top:16px; }
+button:focus-visible,input:focus-visible { outline:3px solid #b98236; outline-offset:3px; }

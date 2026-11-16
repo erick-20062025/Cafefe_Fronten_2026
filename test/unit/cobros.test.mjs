@@ -58,6 +58,7 @@ async function prepararCobro(t, respuestas, conSesion = false, inicial = resumen
         pagos.push(opciones.datos);
         return respuestas.shift();
     } };
+    vista.contenido = { querySelector: () => new ElementoPrueba() };
     vista.filtro = "ordenes";
     vista.conSesion = conSesion;
     vista.mostrarLista = () => assert.fail("Un abono no debe cambiar de pestaña");
@@ -105,7 +106,7 @@ test("dos abonos mantienen la factura y solo el segundo habilita la impresión",
     c.monto.value = "5";
     await enviar(c.formulario);
     assert.deepEqual(c.pagos, [
-        { monto: 5, tipoPago: "EFECTIVO" },
+        { monto: 5, tipoPago: "EFECTIVO", efectivoRecibido: 5 },
         { monto: 5, tipoPago: "TARJETA", referenciaExterna: "PRUEBA-001" },
     ]);
     assert.equal(c.historial.children.length, 2);
@@ -174,7 +175,7 @@ test("recibir 20 dólares para un saldo de 15 muestra el cambio y registra 15", 
     c.monto.oninput();
     assert.match(c.valorCambio.textContent, /5\.00/);
     await enviar(c.formulario);
-    assert.deepEqual(c.pagos, [{ monto: 15, tipoPago: "EFECTIVO" }]);
+    assert.deepEqual(c.pagos, [{ monto: 15, tipoPago: "EFECTIVO", efectivoRecibido: 20 }]);
     assert.match(c.aviso.textContent, /Cambio a entregar:.*5\.00/);
     assert.equal(c.situacion.textContent, "PAGADA");
 });

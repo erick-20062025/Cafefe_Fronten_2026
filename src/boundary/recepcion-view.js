@@ -1,3 +1,4 @@
+import { agruparProductos } from '../entity/detalle_orden.js';
 import { Recepcion } from "../control/recepcion.js";
 export class RecepcionView extends HTMLElement {
     connectedCallback() {
@@ -25,7 +26,7 @@ export class RecepcionView extends HTMLElement {
         for (const orden of m.ordenes) {
             const boton = document.createElement('button');
             boton.className = 'orden'; boton.setAttribute('aria-pressed', String(m.seleccion === orden.idOrden));
-            const titulo = document.createElement('strong'); titulo.textContent = `Orden ${orden.idOrden}`;
+            const titulo = document.createElement('strong'); titulo.textContent = `Orden ${orden.idOrden.slice(0,8)} · ${orden.cliente || "Cliente no indicado"} · ${(orden.estadoPreparacion || "PENDIENTE").replaceAll("_", " ")}`;
             const fecha = document.createElement('time');
             const fechaValida = orden.fechaCreacion && !Number.isNaN(Date.parse(orden.fechaCreacion));
             fecha.textContent = fechaValida ? new Date(orden.fechaCreacion).toLocaleString('es-SV') : 'Sin fecha';
@@ -37,11 +38,22 @@ export class RecepcionView extends HTMLElement {
         const productos = this.querySelector('.productos'); productos.replaceChildren();
         if (!m.seleccion) productos.textContent = 'Selecciona una orden para consultar sus productos.';
         else if (!m.cargandoProductos && !m.error && !m.productos.length) productos.textContent = 'Esta orden no tiene productos.';
-        for (const producto of m.productos) {
+        const orden = m.ordenes.find(o => o.idOrden === m.seleccion);
+        if (orden && this.servicio?.preparar) {
+            const estados=['PENDIENTE','EN_PREPARACION','LISTA','DESPACHADA'];
+            const indice=estados.indexOf(orden.estadoPreparacion || 'PENDIENTE');
+            if (indice>=0 && indice<3) {
+                const accion=document.createElement('button'); accion.textContent=['Iniciar preparación','Marcar lista','Despachar'][indice];
+                accion.onclick=async()=>{ accion.disabled=true; try { await this.servicio.preparar(orden.idOrden,estados[indice],estados[indice+1]); await m.actualizar(); }
+                    catch(error){ this.querySelector('[role=status]').textContent=error.message; accion.disabled=false; } };
+                productos.append(accion);
+            }
+        }
+        for (const producto of agruparProductos(m.productos)) {
             const item = document.createElement('article'); item.className = 'producto';
-            const titulo = document.createElement('h3'); titulo.textContent = producto.producto || 'Producto sin nombre';
+            const titulo = document.createElement('h3'); titulo.textContent = `${producto.cantidad} × ${producto.producto || 'Producto sin nombre'}`;
             const precio = document.createElement('p'); precio.textContent = producto.precio == null ? 'Precio no disponible' : new Intl.NumberFormat('es-SV', {style: 'currency', currency: 'USD'}).format(producto.precio);
-            const nota = document.createElement('p'); nota.textContent = producto.observaciones || 'Sin observaciones';
+            const nota = document.createElement('p'); nota.textContent = [producto.caracteristicas, producto.observaciones].filter(Boolean).join(" · ") || 'Sin observaciones';
             item.append(titulo, precio, nota); productos.append(item);
         }
     }

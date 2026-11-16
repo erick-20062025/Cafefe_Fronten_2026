@@ -6,6 +6,7 @@ export class OrdenService extends DefaultService {
         const solicitar = opciones.solicitar ?? ((url, opciones) => fetch(url, opciones));
         super({ ...opciones, solicitar: (url, opciones) => solicitar(url, { ...opciones, cache: "no-store" }) });
     }
+    preparar(id, esperado, siguiente) { return this.solicitarJson(`ordenes/${encodeURIComponent(id)}/preparacion`, {metodo:"PUT",datos:{esperado,siguiente}}); }
     pendientes() { return this.solicitarJson("ordenes/pendientes"); }
     productos(id) { return this.solicitarJson(`ordenes/${encodeURIComponent(id)}/productos`); }
 }

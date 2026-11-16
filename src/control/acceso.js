@@ -37,11 +37,11 @@ export class Acceso {
         if (version !== this.version) throw new DefaultError('El acceso fue cancelado.');
         this.establecer(respuesta, nombre);
         return permite(this.sesion, this.destino) ? this.destino :
-            permite(this.sesion, "recepcion") ? "recepcion" : "cobros";
+            permite(this.sesion, "recepcion") ? "recepcion" : permite(this.sesion, "cobros") ? "cobros" : "pedido";
     }
     establecer(respuesta, nombre = '') {
         if (respuesta?.activo !== true || !Array.isArray(respuesta.roles) ||
-            !respuesta.roles.some(rol => ["barista", "cocinero", "cajero"].includes(rol)))
+            !respuesta.roles.some(rol => ["barista", "cocinero", "cajero", "camarero"].includes(rol)))
             throw new DefaultError("El empleado no tiene acceso habilitado.");
         this.sesion = Object.freeze({ nombre: String(respuesta.nombre ?? nombre.trim()), roles: Object.freeze([...respuesta.roles]) });
     }

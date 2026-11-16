@@ -1,6 +1,6 @@
-const CACHE = 'cafefe-shell-v15';
+const CACHE = 'cafefe-shell-v16';
 const RECURSOS = [
-    './index.html', './manifest.webmanifest',
+    './index.html', './src/entity/detalle_orden.js', './src/recursos/imagenes/marca/200LogoCafefe.png', './manifest.webmanifest',
     './src/boundary/app.js', './src/boundary/login-view.js', './src/boundary/recepcion-view.js',
     './src/boundary/cobros-view.js', './src/recursos/estilos/cobros.css',
     './src/control/default_service.js', './src/control/sesion_service.js', './src/control/acceso.js', './src/control/recepcion.js', './src/control/pwa.js', './src/control/navegacion.js',
