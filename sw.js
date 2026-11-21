@@ -1,6 +1,6 @@
 const BASE = new URL('./', self.location.href);
 const PREFIJO = 'cafefe-shell-' + encodeURIComponent(BASE.pathname) + '-';
-const CACHE = PREFIJO + 'v26';
+const CACHE = PREFIJO + 'v27';
 const CONFIG = new URL('./src/config/api.js', BASE).href;
 const RECURSOS = [
     './src/config/api.js', './src/control/recepcion-service.js', './src/entity/preparacion-local.js', './src/control/listados-cobros.js',

@@ -159,3 +159,6 @@ button:focus-visible,input:focus-visible { outline:3px solid #b98236; outline-of
 
 .aviso-conexion { color: #9f1717; background: #fff0f0; border: 0.15rem solid #b42323; border-radius: 0.65rem; padding: 1rem 1.25rem; margin: 0 0 1.25rem; font-size: clamp(1.15rem, 2vw, 1.45rem); font-weight: 700; line-height: 1.5; }
 .aviso-conexion[hidden] { display: none; }
+
+.notificacion-exito { color: #004d3d; background: #e5f5ed; border: 0.125rem solid #13795b; border-radius: 0.75rem; padding: 1rem; font-weight: 700; margin-block: 0 1rem; }
+.notificacion-exito[hidden] { display: none; }

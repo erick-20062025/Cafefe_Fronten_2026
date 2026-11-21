@@ -1,0 +1,7 @@
+{
+  "name": "cafefe-frontend",
+  "private": true,
+  "type": "module",
+  "engines": {"node": ">=22"},
+  "scripts": {"test": "node --test test/unit/*.mjs test/unit/control/*.mjs"}
+}

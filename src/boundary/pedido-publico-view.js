@@ -11,6 +11,8 @@ const plantilla = document.createElement("template");
 plantilla.innerHTML = `
     <link rel="stylesheet" href="${estilos.href}">
     <p id="aviso-conexion" class="aviso-conexion" role="alert" hidden></p>
+    <p id="notificacion-exito" class="notificacion-exito" role="status" aria-live="polite" hidden></p>
+    <button id="reintentar-conexion" type="button" hidden>Reconectar catálogo</button>
     <div class="pedido">
         <div class="catalogo">
             <section id="vista-tipos" aria-labelledby="pedido-titulo">
@@ -59,6 +61,7 @@ class PedidoPublico extends HTMLElement {
         this.carrito = new Map();
         this.solicitudProductos = 0;
         this.enviando = false;
+        this.versionEnvio = 0;
         this.nombre = this.elemento("nombre");
         this.resultado = this.elemento("resultado");
 
@@ -69,23 +72,61 @@ class PedidoPublico extends HTMLElement {
     }
 
     connectedCallback() {
-        if (this.servicio) return;
-
-        this.servicio = new PedidoPublicoService();
+        this.servicio ??= new PedidoPublicoService();
         this.mostrarCarrito();
         this.mostrarConexion();
         this.cargarCategorias();
-        this.cambioRed=()=>{this.mostrarConexion();this.servicio.invalidar();this.solicitudCategorias=(this.solicitudCategorias||0)+1;this.solicitudProductos++;this.mostrarCarrito();this.cargarCategorias();if(this.categoria && !this.elemento('seccion-productos').hidden)this.cargarProductos();};
+        this.cambioRed = () => this.actualizarConexion();
         window.addEventListener('online',this.cambioRed);window.addEventListener('offline',this.cambioRed);
-        this.reintentoRed=setInterval(()=>{if(navigator.onLine!==false && !document.hidden && (this.servicio.aviso() || this.servicio.aviso(this.categoria?.idTipoProducto)))this.cambioRed();},30000);
+        this.elemento('reintentar-conexion').onclick = this.cambioRed;
+        this.alVolver = () => {
+            const respaldo = this.servicio.aviso() || (this.categoria && this.servicio.aviso(this.categoria.idTipoProducto));
+            if (!document.hidden && navigator.onLine !== false && respaldo) this.actualizarConexion();
+        };
+        document.addEventListener('visibilitychange', this.alVolver);
     }
-    disconnectedCallback(){ clearInterval(this.reintentoRed);window.removeEventListener('online',this.cambioRed);window.removeEventListener('offline',this.cambioRed);this.solicitudCategorias++;this.solicitudProductos++; }
+    disconnectedCallback() {
+        this.versionEnvio++;
+        this.versionCotizacion = (this.versionCotizacion || 0) + 1;
+        this.ocultarExito();
+        document.removeEventListener('visibilitychange', this.alVolver);
+        window.removeEventListener('online', this.cambioRed);
+        window.removeEventListener('offline', this.cambioRed);
+        this.solicitudCategorias = (this.solicitudCategorias || 0) + 1;
+        this.solicitudProductos++;
+    }
 
+    actualizarConexion() {
+        this.mostrarConexion();
+        this.servicio.invalidar();
+        this.solicitudProductos++;
+        this.mostrarCarrito();
+        this.actualizarCotizacion();
+        this.cargarCategorias();
+        if (this.categoria && !this.elemento('seccion-productos').hidden) this.cargarProductos();
+    }
+
+    ocultarExito() {
+        clearTimeout(this.temporizadorExito);
+        this.temporizadorExito = null;
+        const banner = this.elemento("notificacion-exito");
+        banner.hidden = true;
+        banner.textContent = "";
+    }
+
+    mostrarExito() {
+        this.ocultarExito();
+        const banner = this.elemento("notificacion-exito");
+        banner.textContent = "¡Pedido enviado correctamente!";
+        banner.hidden = false;
+        this.temporizadorExito = setTimeout(() => this.ocultarExito(), 5000);
+    }
 
     mostrarConexion() {
         const aviso = this.elemento("aviso-conexion");
         const sinConexion = navigator.onLine === false || Boolean(this.servicio.aviso() || (this.categoria && this.servicio.aviso(this.categoria.idTipoProducto)));
         aviso.hidden = !sinConexion;
+        this.elemento("reintentar-conexion").hidden = !sinConexion;
         aviso.textContent = sinConexion ? "SIN CONEXIÓN CON EL CATÁLOGO. Los datos guardados pueden estar desactualizados. Reconecta para enviar tu pedido." : "";
     }
 
@@ -106,6 +147,7 @@ class PedidoPublico extends HTMLElement {
             estado.textContent=this.servicio.aviso() || estado.textContent;
             this.mostrarConexion();
         } catch (error) {
+            if (version !== this.solicitudCategorias) return;
             const codigo = error.estado ? ` (HTTP ${error.estado})` : "";
             estado.textContent = `No se pudieron cargar las categorías${codigo}. ${error.detalle || error.message}`;
             reintentar.hidden = false;
@@ -215,6 +257,7 @@ class PedidoPublico extends HTMLElement {
     }
 
     agregar(producto) {
+        if (this.enviando) return;
         const id = producto.idProducto;
         const cantidad = this.carrito.get(id)?.cantidad || 0;
         if (cantidad >= MAX_CANTIDAD || totalUnidades(this.carrito) >= MAX_UNIDADES) {
@@ -229,10 +272,10 @@ class PedidoPublico extends HTMLElement {
         });
         this.resultado.textContent = "";
         this.mostrarCarrito();
+        this.actualizarCotizacion();
     }
 
     mostrarCarrito() {
-        this.actualizarCotizacion();
         const unidades = totalUnidades(this.carrito);
         this.elemento("unidades").textContent = unidades
             ? `${unidades} ${unidades === 1 ? "unidad" : "unidades"}` : "Aún no agregas productos.";
@@ -260,6 +303,7 @@ class PedidoPublico extends HTMLElement {
                 this.resultado.textContent = "";
                 const indice = Array.from(lista.children).indexOf(li);
                 this.mostrarCarrito();
+                this.actualizarCotizacion();
                 const destino = lista.children[indice] || lista.lastElementChild;
                 const botones = destino?.querySelectorAll("button");
                 const boton = cambio > 0 && !botones?.[1].disabled ? botones?.[1] : botones?.[0];
@@ -286,7 +330,7 @@ class PedidoPublico extends HTMLElement {
         if (!this.carrito.size) { salida.textContent=''; return; }
         if(navigator.onLine===false){salida.textContent='Precios orientativos sin conexión. No se pueden enviar pedidos.';return;}
         if (!this.servicio?.cotizar || this.enviando) return;
-        salida.textContent = 'Calculando promociones vigentes…';
+        salida.textContent = 'Consultando importe actual…';
         try {
             const resumen = await this.servicio.cotizar(armarPedido('Vista previa', this.carrito));
             if (version !== this.versionCotizacion || !this.isConnected) return;
@@ -307,6 +351,9 @@ class PedidoPublico extends HTMLElement {
             return;
         }
 
+        this.ocultarExito();
+        const version = ++this.versionEnvio;
+        this.versionCotizacion = (this.versionCotizacion || 0) + 1;
         this.enviando = true;
         this.nombre.disabled = true;
         this.mostrarCarrito();
@@ -314,15 +361,25 @@ class PedidoPublico extends HTMLElement {
         this.resultado.textContent = "Enviando pedido…";
         try {
             const orden = await this.servicio.enviar(pedido);
-            this.dispatchEvent(new CustomEvent("pedido-registrado",{bubbles:true,composed:true}));
+            if (version !== this.versionEnvio) return;
+            if (!orden || typeof orden.idOrden !== 'string' || !/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(orden.idOrden))
+                throw new Error('No se pudo confirmar el pedido. Verifica su registro antes de volver a enviarlo.');
             this.carrito.clear();
             this.nombre.value = "";
-            this.resultado.textContent = orden?.idOrden
-                ? `Pedido recibido. Número de orden: ${orden.idOrden}. Total confirmado: ${formatoPrecio.format(orden.total)}.`
-                : "Pedido recibido.";
+            this.resultado.textContent = "";
+            this.elemento('cotizacion').textContent = "";
+            this.categoria = null;
+            this.tarjetaSeleccionada = null;
+            this.volverATipos();
+            this.mostrarExito();
+            this.servicio.invalidar();
+            this.cargarCategorias();
+            this.dispatchEvent(new CustomEvent("pedido-registrado", {bubbles:true, composed:true}));
         } catch (error) {
+            if (version !== this.versionEnvio) return;
             this.resultado.textContent = error.detalle || error.message;
         } finally {
+            if (version !== this.versionEnvio) return;
             this.enviando = false;
             this.nombre.disabled = false;
             this.mostrarConexion();

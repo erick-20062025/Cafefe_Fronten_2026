@@ -304,3 +304,19 @@ test('respuesta tardía no restaura una factura cerrada', async t => {
     assert.equal(c.vista.facturaAbierta,null);assert.equal(c.vista.seleccion,null);
     assert.match(c.vista.contenido.children[0].textContent,/Seleccioná/);
 });
+
+test('un error tardío después de cerrar no restaura mensajes ni bloqueo del cobro', async t => {
+    const c=await prepararCobro(t,[],true);prepararCierre(c.vista);
+    let rechazar;
+    const ejecutar=Object.getPrototypeOf(c.vista).ejecutar;
+    const pendiente=ejecutar.call(c.vista,'Consultando…',()=>new Promise((_,reject)=>{rechazar=reject;}));
+    assert.equal(c.vista.columnas.inert,true);
+    c.vista.cerrarFactura();
+    rechazar(new Error('Respuesta del comprobante anterior'));
+    await pendiente;
+    assert.equal(c.vista.estado.textContent,'');
+    assert.equal(c.vista.estado.dataset.error,'false');
+    assert.equal(c.vista.columnas.inert,false);
+    assert.equal(c.vista.actualizarBoton.disabled,false);
+    assert.equal(c.vista.ocupado,false);
+});
