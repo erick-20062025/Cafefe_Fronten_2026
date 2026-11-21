@@ -13,6 +13,7 @@ class ElementoPrueba {
     querySelector() { return null; }
     removeAttribute(nombre) { this[nombre] = ""; }
     focus() { this.enfocado = true; }
+    setAttribute(nombre, valor) { this[nombre] = valor; }
     get valueAsNumber() { return this.value === "" ? NaN : Number(this.value); }
 }
 
@@ -200,4 +201,106 @@ test("tarjeta oculta el cambio y conserva el límite del saldo", async t => {
     assert.equal(c.referencia.required, false);
     assert.equal(c.monto.max, "");
     assert.match(c.valorCambio.textContent, /5\.02/);
+});
+
+
+test("formulario informa que el cambio no se guarda en el historial", async t => {
+    const c = await prepararCobro(t, []);
+    assert.match(c.formulario.innerHTML, /<h4>Registrar abono<\/h4>/);
+    assert.match(c.formulario.innerHTML, /name="monto"[^>]*required/);
+    assert.match(c.formulario.innerHTML, /name="tipoPago"/);
+    assert.match(c.formulario.innerHTML, /aria-live="polite"/);
+    assert.match(c.formulario.innerHTML, /no queda guardado en el historial/);
+    assert.match(c.formulario.innerHTML, /type="submit"/);
+});
+
+
+test("monto inválido no envía un abono ni cambia la factura", async t => {
+    const c = await prepararCobro(t, []);
+    c.monto.value = "-1";
+    await enviar(c.formulario);
+    assert.match(c.vista.error, /monto válido/);
+    assert.deepEqual(c.pagos, []);
+    assert.equal(c.situacion.textContent, "PENDIENTE");
+});
+
+test("fallo de red no confirma un cobro ni anuncia cambio entregado", async t => {
+    const c = await prepararCobro(t, []);
+    c.vista.servicio.solicitarJson = async () => { throw new Error("Sin conexión"); };
+    c.monto.value = "20";
+    await enviar(c.formulario);
+    assert.match(c.vista.error, /No se pudo confirmar el abono/);
+    assert.match(c.vista.error, /revisá el historial antes de volver a pagar/);
+    assert.equal(c.situacion.textContent, "PENDIENTE");
+    assert.ok(!c.aviso.textContent);
+});
+
+
+test("ticket pagado renderiza importes oficiales y permite imprimir sin inventar descuentos", async t => {
+    const c = await prepararCobro(t, [], true);
+    c.vista.contenido = new ElementoPrueba();
+    c.vista.marcarSeleccion = () => {};
+    c.vista.servicio.solicitarJson = async ruta => {
+        if (ruta.endsWith('/resumen')) return resumen(10, 0, true);
+        if (ruta.endsWith('/abonos')) return [{monto: 4, tipoPago: 'EFECTIVO'}, {monto: 6, tipoPago: 'TARJETA'}];
+        return {idFactura: 'factura-prueba', estado: 'PAGADA', cliente: 'Ana', productos: [
+            {idProducto: 'cafe', producto: 'Café', precio: 5},
+            {idProducto: 'cafe', producto: 'Café', precio: 5}]};
+    };
+    await c.vista.abrirFactura('factura-prueba');
+    const texto = nodo => [nodo.textContent || '', ...nodo.children.map(texto)].join(' ');
+    const resultado = texto(c.vista.contenido);
+    assert.match(resultado, /Comprobante de consumo/);
+    assert.match(resultado, /PAGADA/);
+    assert.match(resultado, /Cliente: Ana/);
+    assert.match(resultado, /Café/);
+    assert.match(resultado, /10.00/);
+    assert.match(resultado, /Imprimir/);
+    assert.doesNotMatch(resultado, /Descuentos|Subtotal|Cambio entregado|Registrar abono/);
+});
+
+function prepararCierre(vista) {
+    vista.estado = new ElementoPrueba(); vista.estado.textContent = 'Cobro anterior';
+    vista.columnas = new ElementoPrueba(); vista.actualizarBoton = new ElementoPrueba();
+    vista.contenido = new ElementoPrueba();
+    vista.marcarSeleccion = id => { vista.seleccion=id; };
+    vista.mostrarLista = id => { vista.filtro=id; };
+}
+test('cerrar ticket limpia selección y cambio; reabrir consulta sin duplicar pagos', async t => {
+    const c=await prepararCobro(t,[],true); prepararCierre(c.vista);
+    const solicitudes=[];
+    c.vista.servicio.solicitarJson=async (ruta,opciones)=>{
+        solicitudes.push({ruta,opciones});
+        if(ruta.endsWith('/resumen'))return resumen(10,0,true);
+        if(ruta.endsWith('/abonos'))return [{monto:10,tipoPago:'EFECTIVO'}];
+        return {idFactura:'factura-prueba',estado:'PAGADA',productos:[]};
+    };
+    await c.vista.abrirFactura('factura-prueba');
+    const texto=n=>[n.textContent||'',...n.children.map(texto)].join(' ');
+    c.vista.contenido.append(Object.assign(new ElementoPrueba(),{textContent:'Cambio entregado $5.00'}));
+    const acciones=c.vista.contenido.children[2];
+    assert.equal(acciones.children[1].textContent,'Cerrar factura');
+    acciones.children[1].onclick();
+    assert.equal(c.vista.facturaAbierta,null); assert.equal(c.vista.seleccion,null);
+    assert.equal(c.vista.estado.textContent,''); assert.equal(c.vista.estado.dataset.error,'false');
+    assert.equal(c.vista.filtro,'ordenes');
+    assert.doesNotMatch(texto(c.vista.contenido),/Cambio entregado|PAGADA/);
+    await enviar(c.formulario); // Un formulario descartado tampoco puede registrar otro abono.
+    await c.vista.abrirFactura('factura-prueba');
+    assert.equal(c.vista.facturaAbierta,'factura-prueba');
+    assert.match(texto(c.vista.contenido),/PAGADA/);
+    assert.doesNotMatch(texto(c.vista.contenido),/Cambio entregado/);
+    assert.equal(solicitudes.length,6); assert.ok(solicitudes.every(s=>!s.opciones?.metodo));
+});
+test('respuesta tardía no restaura una factura cerrada', async t => {
+    const c=await prepararCobro(t,[],true);prepararCierre(c.vista);
+    const pendientes=[];
+    c.vista.servicio.solicitarJson=ruta=>new Promise(resolve=>pendientes.push(()=>resolve(
+        ruta.endsWith('/resumen')?resumen(10,0,true):ruta.endsWith('/abonos')?[]:{idFactura:'factura-prueba',estado:'PAGADA',productos:[]})));
+    const apertura=c.vista.abrirFactura('factura-prueba');
+    c.vista.cerrarFactura();
+    for(const responder of pendientes)responder();
+    await apertura;
+    assert.equal(c.vista.facturaAbierta,null);assert.equal(c.vista.seleccion,null);
+    assert.match(c.vista.contenido.children[0].textContent,/Seleccioná/);
 });

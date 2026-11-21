@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import PedidoPublicoService from "../../../src/control/pedido_publico_service.js";
-import { armarPedido, categoriasActivas, fotoDeCategoria, fotoDeProducto, precioEnCentavos, totalEstimado } from "../../../src/entity/pedido_publico.js";
+import PedidoPublicoService from "../../../src/control/pedido-publico-service.js";
+import { armarPedido, categoriasActivas, fotoDeCategoria, fotoDeProducto, precioEnCentavos, totalEstimado } from "../../../src/entity/pedido-publico-model.js";
 
 test("el catálogo muestra directamente las categorías activas del backend", () => {
     const cafe = { nombre: "Café", activo: true };

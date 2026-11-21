@@ -1,11 +1,15 @@
-const CACHE = 'cafefe-shell-v21';
+const BASE = new URL('./', self.location.href);
+const PREFIJO = 'cafefe-shell-' + encodeURIComponent(BASE.pathname) + '-';
+const CACHE = PREFIJO + 'v26';
+const CONFIG = new URL('./src/config/api.js', BASE).href;
 const RECURSOS = [
-    './src/control/catalogo_offline.js', './src/control/menu_movil.js', './src/boundary/gestion-ordenes.js', './src/recursos/imagenes/fondo-cafe.png',
+    './src/config/api.js', './src/control/recepcion-service.js', './src/entity/preparacion-local.js', './src/control/listados-cobros.js',
+    './src/control/catalogo_offline.js', './src/control/menu_movil.js', './src/recursos/imagenes/fondo-cafe.png',
     './index.html', './src/entity/detalle_orden.js', './src/recursos/imagenes/marca/200LogoCafefe.png', './manifest.webmanifest',
     './src/boundary/app.js', './src/boundary/login-view.js', './src/boundary/recepcion-view.js',
     './src/boundary/cobros-view.js', './src/recursos/estilos/cobros.css',
     './src/control/default_service.js', './src/control/sesion_service.js', './src/control/acceso.js', './src/control/recepcion.js', './src/control/pwa.js', './src/control/navegacion.js',
-    './src/boundary/pedido_publico.js', './src/control/pedido_publico_service.js', './src/entity/pedido_publico.js',
+    './src/boundary/pedido-publico-view.js', './src/control/pedido-publico-service.js', './src/entity/pedido-publico-model.js',
     './src/recursos/estilos/pedido_publico.css',
     './src/recursos/imagenes/bebidas-calientes.jpg', './src/recursos/imagenes/bebidas-frias.jpg',
     './src/recursos/imagenes/comida.jpg', './src/recursos/imagenes/postres.jpg', './src/recursos/imagenes/categoria-cafefe.webp',
@@ -22,12 +26,16 @@ const RECURSOS = [
     "./src/recursos/imagenes/merch.jpeg",
 "./src/recursos/imagenes/productos/vaso-coleccionable.jpeg"
 ];
-const BASE = new URL('./', self.location.href);
 const PERMITIDOS = new Set(RECURSOS.map(ruta => new URL(ruta, BASE).href));
-self.addEventListener('install', event => event.waitUntil(caches.open(CACHE).then(cache => cache.addAll([...PERMITIDOS]))));
-// No skipWaiting: una versión nueva toma control al cerrar todas las pestañas anteriores.
+self.addEventListener('install', event => event.waitUntil((async () => {
+    const cache = await caches.open(CACHE);
+    await cache.addAll([...PERMITIDOS]);
+    // Activar los recursos nuevos sin recargar formularios ni cobros en curso.
+    await self.skipWaiting();
+})()));
 self.addEventListener('activate', event => event.waitUntil((async () => {
-    for (const nombre of await caches.keys()) if (nombre.startsWith('cafefe-shell-') && nombre !== CACHE) await caches.delete(nombre);
+    for (const nombre of await caches.keys()) if (nombre !== CACHE && (nombre.startsWith(PREFIJO)
+        || (BASE.pathname === '/' && /^cafefe-shell-v\d+$/.test(nombre)))) await caches.delete(nombre);
     await self.clients.claim();
 })()));
 self.addEventListener('fetch', event => {
@@ -37,6 +45,21 @@ self.addEventListener('fetch', event => {
     url.hash = "";
     // Lista cerrada: ninguna API, credencial, querystring o recurso externo se guarda.
     if (url.origin !== BASE.origin || url.search) return;
+    if (url.href === CONFIG) {
+        event.respondWith((async () => {
+            const cache = await caches.open(CACHE);
+            try {
+                const respuesta = await fetch(request, {cache: 'no-store'});
+                if (respuesta.ok) await cache.put(CONFIG, respuesta.clone());
+                return respuesta;
+            } catch (error) {
+                const guardada = await cache.match(CONFIG);
+                if (guardada) return guardada;
+                throw error;
+            }
+        })());
+        return;
+    }
     const esEntrada = request.mode === 'navigate' && (url.href === BASE.href || url.href === new URL('index.html', BASE).href);
     if (!esEntrada && !PERMITIDOS.has(url.href)) return;
     const clave = esEntrada ? new URL('index.html', BASE).href : url.href;
