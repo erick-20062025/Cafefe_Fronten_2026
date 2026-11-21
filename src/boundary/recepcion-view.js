@@ -5,7 +5,7 @@ export class RecepcionView extends HTMLElement {
         this.modelo = new Recepcion(this.servicio, () => this.render());
         this.offline = () => this.modelo.desconectar();
         window.addEventListener('offline', this.offline);
-        this.innerHTML = `<section><header class="contenido__cabecera"><p class="contenido__etiqueta">PERSONAL · CAFEFE</p><h1>Recepción de órdenes</h1><p class="contenido__descripcion">Consulta las órdenes pendientes y selecciona una para ver sus productos.</p></header>
+        this.innerHTML = `<section><header class="contenido__cabecera"><p class="contenido__etiqueta">PERSONAL · CAFEFE</p><h1>Recepción de órdenes</h1><p class="contenido__descripcion">Consulta las órdenes pendientes de pago y selecciona una para ver sus productos. </p><small>El seguimiento se reinicia al recargar o salir y no se comparte entre empleados. No cambia el pago.</small></header>
         <button class="actualizar">Actualizar listado</button><p class="mensaje" role="status" aria-live="polite"></p>
         <div class="recepcion-columnas"><section class="tarjeta"><h2>Órdenes pendientes</h2><div class="ordenes"></div></section>
         <section class="tarjeta"><h2 class="seleccion">Productos</h2><div class="productos"></div></section></div></section>`;
@@ -26,7 +26,7 @@ export class RecepcionView extends HTMLElement {
         for (const orden of m.ordenes) {
             const boton = document.createElement('button');
             boton.className = 'orden'; boton.setAttribute('aria-pressed', String(m.seleccion === orden.idOrden));
-            const titulo = document.createElement('strong'); titulo.textContent = `Orden ${orden.idOrden.slice(0,8)} · ${orden.cliente || "Cliente no indicado"} · ${(orden.estadoPreparacion || "PENDIENTE").replaceAll("_", " ")}`;
+            const titulo = document.createElement('strong'); titulo.textContent = `Orden ${orden.idOrden.slice(0,8)} · ${orden.cliente || "Cliente no indicado"} · ${{PENDIENTE_DE_PAGO:"Pendiente de pago",ABONADA_PARCIALMENTE:"Abonada parcialmente",PAGADA:"Pagada"}[orden.estadoPago] || "Pendiente de pago"}`;
             const fecha = document.createElement('time');
             const fechaValida = orden.fechaCreacion && !Number.isNaN(Date.parse(orden.fechaCreacion));
             fecha.textContent = fechaValida ? new Date(orden.fechaCreacion).toLocaleString('es-SV') : 'Sin fecha';
@@ -38,15 +38,17 @@ export class RecepcionView extends HTMLElement {
         const productos = this.querySelector('.productos'); productos.replaceChildren();
         if (!m.seleccion) productos.textContent = 'Selecciona una orden para consultar sus productos.';
         else if (!m.cargandoProductos && !m.error && !m.productos.length) productos.textContent = 'Esta orden no tiene productos.';
-        const orden = m.ordenes.find(o => o.idOrden === m.seleccion);
-        if (orden && this.servicio?.preparar) {
-            const estados=['PENDIENTE','EN_PREPARACION','LISTA','DESPACHADA'];
-            const indice=estados.indexOf(orden.estadoPreparacion || 'PENDIENTE');
-            if (indice>=0 && indice<3) {
-                const accion=document.createElement('button'); accion.textContent=['Iniciar preparación','Marcar lista','Despachar'][indice];
-                accion.onclick=async()=>{ accion.disabled=true; try { await this.servicio.preparar(orden.idOrden,estados[indice],estados[indice+1]); await m.actualizar(); }
-                    catch(error){ this.querySelector('[role=status]').textContent=error.message; accion.disabled=false; } };
-                productos.append(accion);
+        if (m.seleccion && !m.cargandoProductos && !m.error && m.preparacion) {
+            const estado = m.preparacion.estado(m.seleccion);
+            const nota = document.createElement('p');
+            nota.textContent = `Estado de preparación: ${estado}`;
+            productos.append(nota);
+            const etiquetas = {PENDIENTE:'Iniciar preparación', PREPARANDO:'Marcar como lista', LISTA:'Marcar como despachada'};
+            if (etiquetas[estado]) {
+                const boton = document.createElement('button'); boton.type = 'button';
+                boton.textContent = etiquetas[estado];
+                boton.onclick = () => m.avanzarPreparacion(m.seleccion);
+                productos.append(boton);
             }
         }
         for (const producto of agruparProductos(m.productos)) {

@@ -156,3 +156,6 @@ button:focus-visible, input:focus-visible { outline: 2px solid #2f5d50; outline-
 .caracteristicas { font-size:13px; color:#596c61; margin:8px 0; }
 #cotizacion { font-size:14px; line-height:1.8; border-top:1px solid var(--borde); margin-top:20px; padding-top:16px; }
 button:focus-visible,input:focus-visible { outline:3px solid #b98236; outline-offset:3px; }
+
+.aviso-conexion { color: #9f1717; background: #fff0f0; border: 0.15rem solid #b42323; border-radius: 0.65rem; padding: 1rem 1.25rem; margin: 0 0 1.25rem; font-size: clamp(1.15rem, 2vw, 1.45rem); font-weight: 700; line-height: 1.5; }
+.aviso-conexion[hidden] { display: none; }

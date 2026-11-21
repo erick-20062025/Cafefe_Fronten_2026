@@ -1,10 +1,10 @@
 import DefaultError from "../entity/default_error.js";
 
-const URL_API = "http://localhost:9080/Cafefe_PPI_2026-1.0-SNAPSHOT/api/";
+import { API_URL } from "../config/api.js";
 
 export default class DefaultService {
     constructor({
-        urlApi = URL_API,
+        urlApi = API_URL,
         solicitar = (url, opciones) => globalThis.fetch(url, opciones),
     } = {}) {
         this.urlApi = urlApi.endsWith("/") ? urlApi : urlApi + "/";

@@ -1,8 +1,7 @@
 import { conectarMenu } from "../control/menu_movil.js";
-import "./gestion-ordenes.js";
 import './login-view.js';
 import './recepcion-view.js';
-import './pedido_publico.js';
+import './pedido-publico-view.js';
 import './cobros-view.js';
 import { SesionService } from '../control/sesion_service.js';
 import { OrdenService } from '../control/recepcion.js';
@@ -20,7 +19,6 @@ export class CafefeApp extends HTMLElement {
         const plantilla = document.querySelector('#base-cafefe');
         this.append(plantilla.content.cloneNode(true));
         this.querySelector('.navegacion').innerHTML = `<a class="navegacion__item" href="#/pedido">Órdenes</a>
-        <a class="navegacion__item" href="#/mis-ordenes">Mis órdenes</a>
         <a class="navegacion__item" href="#/recepcion">Recepción de órdenes</a><a class="navegacion__item" href="#/cobros">Cobros</a>
         <button class="sesion-control cafefe-boton" type="button">Iniciar sesión</button><p class="personal-identidad" aria-live="polite"></p>`;
         this.limpiarMenu=conectarMenu(this);
@@ -33,7 +31,6 @@ export class CafefeApp extends HTMLElement {
             try { await cierre; } catch { this.querySelector('.conexion').textContent = 'No se pudo confirmar el cierre en el servidor. Reconecta para volver a intentarlo.'; }
         };
         this.addEventListener('sesion-vencida', () => { this.acceso.sesion = null; this.render(); });
-        this.addEventListener('pedido-registrado',()=>this.querySelector('cafefe-gestion-ordenes')?.actualizar());
         this.addEventListener('acceso-iniciado', event => this.navegar(event.detail));
         this.ruta = () => this.render(); this.conexion = () => {
             this.querySelector('.conexion').textContent = navigator.onLine ? '' : 'Sin conexión: la interfaz está disponible; las consultas requieren conexión.';
@@ -58,7 +55,7 @@ export class CafefeApp extends HTMLElement {
         this.querySelector('.personal-identidad').textContent = this.acceso.sesion ? `${this.acceso.sesion.nombre} · ${this.acceso.sesion.roles.join(', ')}` : 'Pedidos abiertos al público';
         for (const link of this.querySelectorAll('.navegacion a')) {
             const destino = link.hash.slice(2);
-            link.hidden = Boolean(this.acceso.sesion && ['recepcion', 'cobros', 'mis-ordenes'].includes(destino) && !permite(this.acceso.sesion, destino));
+            link.hidden = Boolean(this.acceso.sesion && ['recepcion', 'cobros'].includes(destino) && !permite(this.acceso.sesion, destino));
             link.classList.toggle('navegacion__item--activo', destino === ruta);
             if (destino === ruta) link.setAttribute('aria-current', 'page'); else link.removeAttribute('aria-current');
         }
@@ -67,10 +64,6 @@ export class CafefeApp extends HTMLElement {
         }
         if (ruta === 'login') {
             const vista = document.createElement('cafefe-login'); vista.acceso = this.acceso; main.append(vista);
-        } else if (ruta === 'mis-ordenes') {
-            const gestion = document.createElement('cafefe-gestion-ordenes');
-            gestion.servicio = this.sesionApi;
-            main.append(gestion);
         } else if (ruta === 'recepcion') {
             const vista = document.createElement('cafefe-recepcion');
             vista.servicio = new OrdenService({urlApi:this.sesionApi.urlApi, solicitar:async (url, opciones) => {

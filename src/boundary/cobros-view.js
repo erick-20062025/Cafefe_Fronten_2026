@@ -1,6 +1,7 @@
+import { ListadosCobros } from "../control/listados-cobros.js";
 import { agruparProductos } from '../entity/detalle_orden.js';
 import DefaultService from "../control/default_service.js";
-import { precioEnCentavos } from "../entity/pedido_publico.js";
+import { precioEnCentavos } from "../entity/pedido-publico-model.js";
 
 const moneda = new Intl.NumberFormat("es-SV", { style: "currency", currency: "USD" });
 const dinero = monto => moneda.format(monto);
@@ -30,6 +31,9 @@ function nodo(etiqueta, texto) {
 }
 
 class CobrosView extends HTMLElement {
+    versionDetalle = 0;
+    versionOperacion = 0;
+    disconnectedCallback() { this.versionDetalle++; this.versionOperacion++; this.listados?.invalidar(); }
     connectedCallback() {
         this.servicio ??= new DefaultService();
         this.filtro = "ordenes";
@@ -91,6 +95,7 @@ class CobrosView extends HTMLElement {
 
     async ejecutar(mensaje, operacion) {
         if (this.ocupado) return;
+        const version = ++this.versionOperacion;
         this.ocupado = true;
         this.estado.dataset.error = "false";
         this.estado.textContent = mensaje;
@@ -98,11 +103,14 @@ class CobrosView extends HTMLElement {
         this.actualizarBoton.disabled = true;
         try {
             await operacion();
+            if (version !== this.versionOperacion) return;
             this.estado.textContent = "";
         } catch (error) {
+            if (version !== this.versionOperacion) return;
             this.estado.dataset.error = "true";
             this.estado.textContent = error.detalle || error.message;
         } finally {
+            if (version !== this.versionOperacion) return;
             this.ocupado = false;
             this.columnas.inert = false;
             this.actualizarBoton.disabled = false;
@@ -110,24 +118,23 @@ class CobrosView extends HTMLElement {
     }
 
     async actualizar() {
-        await Promise.all(listas.map(async lista => {
-            const destino = this.querySelector(`[data-lista="${lista.id}"]`);
-            const contador = this.querySelector(`[data-filtro="${lista.id}"] span`);
-            try {
-                const ruta = this.conSesion
-                    ? (lista.id === "ordenes" ? "cobros/ordenes-pendientes" : `cobros/facturas/${lista.id}`)
-                    : lista.ruta;
-                const registros = await this.servicio.solicitarJson(ruta);
-                if (!Array.isArray(registros)) throw new Error("La API devolvió un listado inválido.");
-                if (contador) contador.textContent = registros.length;
-                destino.replaceChildren();
-                if (!registros.length) destino.append(this.vacio(lista.vacio));
-                for (const registro of registros) destino.append(this.filaLista(lista, registro));
-            } catch (error) {
-                if (contador) contador.textContent = "—";
-                destino.replaceChildren(this.vacio(error.detalle || error.message));
-            }
-        }));
+        if (!this.listados) {
+            this.listados = new ListadosCobros(this.servicio, listas, this.conSesion,
+                (lista, estado) => this.renderListado(lista, estado));
+        }
+        await this.listados.actualizar();
+    }
+
+    renderListado(lista, {cargando, registros, error}) {
+        const destino = this.querySelector(`[data-lista="${lista.id}"]`);
+        const contador = this.querySelector(`[data-filtro="${lista.id}"] span`);
+        if (!destino) return;
+        if (contador) contador.textContent = cargando ? '…' : error ? '—' : registros.length;
+        destino.replaceChildren();
+        if (cargando) destino.append(this.vacio('Cargando…'));
+        else if (error) destino.append(this.vacio(error));
+        else if (!registros.length) destino.append(this.vacio(lista.vacio));
+        else for (const registro of registros) destino.append(this.filaLista(lista, registro));
     }
 
     filaLista(lista, registro) {
@@ -160,11 +167,13 @@ class CobrosView extends HTMLElement {
     }
 
     async abrirOrden(id) {
+        const version = ++this.versionDetalle;
         const ordenes = this.conSesion ? "cobros/ordenes" : "ordenes";
         const [filas, cajas] = await Promise.all([
             this.servicio.solicitarJson(`${ordenes}/${id}/productos-facturables`),
             this.servicio.solicitarJson(this.conSesion ? "cobros/cajas" : "cajas"),
         ]);
+        if (version !== this.versionDetalle) return;
         const activas = cajas.filter(caja => caja.activo === true);
         this.facturaAbierta = null;
         this.marcarSeleccion(id);
@@ -173,9 +182,8 @@ class CobrosView extends HTMLElement {
             this.contenido.append(this.vacio("La orden ya está facturada. Buscala en Facturas por cobrar."));
             return;
         }
-        this.contenido.append(this.productos(filas),this.importes([
-            ['Subtotal',filas.reduce((s,p)=>s+Number(p.precioBase ?? p.precio),0)],
-            ['Descuentos',filas.reduce((s,p)=>s+Number(p.descuento || 0),0)]
+        this.contenido.append(this.productos(filas), this.importes([
+            ['Total', filas.reduce((s, p) => s + Number(p.precio), 0)]
         ]));
         if (!activas.length) {
             this.contenido.append(nodo("p", "No hay cajas activas."));
@@ -199,6 +207,7 @@ class CobrosView extends HTMLElement {
         for (const caja of activas) form.elements.caja.add(new Option(caja.nombre, caja.idCaja));
         form.onsubmit = evento => {
             evento.preventDefault();
+            if (version !== this.versionDetalle) return;
             return this.ejecutar("Creando factura…", async () => {
                 const cliente = form.elements.cliente.value.trim();
                 const datos = { idCaja: form.elements.caja.value, ...(cliente ? { cliente } : {}) };
@@ -208,6 +217,7 @@ class CobrosView extends HTMLElement {
                     datos.productos = filas.map(({ idOrdenProducto, precio }) => ({ idOrdenProducto, precio }));
                 }
                 const factura = await this.servicio.solicitarJson(ruta, { metodo: "POST", datos });
+                if (version !== this.versionDetalle) return;
                 this.facturaAbierta = factura.idFactura;
                 this.contenido.replaceChildren(nodo("p", `Factura creada: ${factura.idFactura}`));
                 await this.abrirFactura(factura.idFactura);
@@ -218,12 +228,14 @@ class CobrosView extends HTMLElement {
     }
 
     async abrirFactura(id) {
+        const version = ++this.versionDetalle;
         const ruta = this.rutaPago(id);
         const [factura, resumen, abonos] = await Promise.all([
             this.servicio.solicitarJson(this.conSesion ? ruta : `facturas/${id}`),
             this.servicio.solicitarJson(`${ruta}/resumen`),
             this.servicio.solicitarJson(`${ruta}/abonos`),
         ]);
+        if (version !== this.versionDetalle) return;
         this.facturaAbierta = id;
         this.marcarSeleccion(id);
         const pagada = factura.estado === "PAGADA" && resumen.completado === true
@@ -237,8 +249,8 @@ class CobrosView extends HTMLElement {
         const ordenes=[...new Set((factura.productos || []).map(p=>p.idOrden).filter(Boolean))];
         for (const orden of ordenes) {
             const detalle=factura.productos.find(p=>p.idOrden===orden);
-            ticket.append(nodo('p',`Orden: ${orden}`),nodo('p',`Fecha de orden: ${fecha(detalle.fechaOrden) || 'No registrada'}`),
-                nodo('p',`Atendido por: ${detalle.atendidoPor || 'No registrado'}`));
+            if (detalle.atendidoPor) ticket.append(nodo('p', `Atendido por: ${detalle.atendidoPor}`));
+            ticket.append(nodo('p',`Orden: ${orden}`),nodo('p',`Fecha de orden: ${fecha(detalle.fechaOrden) || 'No registrada'}`));
         }
         ticket.append(
             this.encabezadoDetalle("Factura", factura.idFactura, pagada ? "PAGADA" : pendiente ? "PENDIENTE" : "REVISAR SALDO"),
@@ -256,11 +268,6 @@ class CobrosView extends HTMLElement {
             historial.append(vacio);
         }
 
-        const subtotal=(factura.productos || []).reduce((s,p)=>s+Number(p.precioBase ?? p.precio),0);
-        const descuento=(factura.productos || []).reduce((s,p)=>s+Number(p.descuento || 0),0);
-        ticket.append(this.importes([["Subtotal",subtotal],["Descuentos",descuento]]));
-        const cambio=abonos.reduce((s,a)=>s+Number(a.cambioEntregado || 0),0);
-        if(cambio>0) ticket.append(this.importes([["Cambio entregado",cambio]]));
         const importes = this.resumenFactura(resumen);
         ticket.append(nodo("h4","Abonos"),historial, importes);
 
@@ -271,7 +278,7 @@ class CobrosView extends HTMLElement {
         this.contenido.replaceChildren(ticket, aviso, acciones);
 
         if (pagada) {
-            acciones.append(this.botonImprimir());
+            acciones.append(this.botonImprimir(), this.botonCerrarFactura());
         } else if (pendiente) {
             const situacion = ticket.querySelector(".cobros__situacion");
             acciones.append(this.conSesion || this.idEmpleadoRol
@@ -280,6 +287,28 @@ class CobrosView extends HTMLElement {
         } else {
             acciones.append(this.vacio("El saldo y el estado de la factura no coinciden. Actualizá para verificar."));
         }
+    }
+
+    cerrarFactura() {
+        this.versionDetalle++;
+        this.versionOperacion++;
+        this.facturaAbierta = null;
+        this.marcarSeleccion(null);
+        this.estado.textContent = "";
+        this.estado.dataset.error = "false";
+        this.ocupado = false;
+        this.columnas.inert = false;
+        this.actualizarBoton.disabled = false;
+        this.contenido.replaceChildren(this.vacio("Seleccioná una orden o factura para comenzar."));
+        this.mostrarLista("ordenes");
+    }
+
+    botonCerrarFactura() {
+        const cerrar = nodo("button", "Cerrar factura");
+        cerrar.type = "button";
+        cerrar.className = "cafefe-boton cobros__cerrar";
+        cerrar.onclick = () => this.cerrarFactura();
+        return cerrar;
     }
 
     rutaPago(id) {
@@ -305,6 +334,7 @@ class CobrosView extends HTMLElement {
     }
 
     formularioPago(id, resumenInicial, { historial, importes, aviso, acciones, situacion }) {
+        const version = this.versionDetalle;
         const form = document.createElement("form");
         form.className = "cobros__pago";
         form.innerHTML = `<h4>Registrar abono</h4>
@@ -316,6 +346,7 @@ class CobrosView extends HTMLElement {
                 <label class="cobros__referencia" hidden>Referencia <input name="referenciaExterna" maxlength="120"></label>
             </div>
             <p class="cobros__cambio" aria-live="polite">Cambio a entregar <strong>$0.00</strong></p>
+            <p>El cambio se muestra al cobrar; no queda guardado en el historial.</p>
             <button type="submit" class="cafefe-boton">Registrar abono</button>`;
         const { monto: campoMonto, tipoPago: campoMetodo, referenciaExterna: campoReferencia } = form.elements;
         const enviar = form.querySelector("button");
@@ -350,7 +381,7 @@ class CobrosView extends HTMLElement {
         configurarMetodo();
         form.onsubmit = async evento => {
             evento.preventDefault();
-            if (enviar.disabled) return;
+            if (enviar.disabled || version !== this.versionDetalle) return;
             let siguienteControl;
             await this.ejecutar("Registrando abono…", async () => {
                 const tipoPago = campoMetodo.value;
@@ -375,6 +406,7 @@ class CobrosView extends HTMLElement {
                     }
                     throw error;
                 }
+                if (version !== this.versionDetalle) return;
                 if (!verificarAbono(confirmado, resumen, monto, id)) {
                     enviar.disabled = true;
                     throw new Error("El saldo devuelto no coincide con el abono. Pulsá Actualizar y revisá el historial antes de volver a pagar.");
@@ -396,7 +428,9 @@ class CobrosView extends HTMLElement {
                     situacion.textContent = "PAGADA";
                     situacion.dataset.pagada = "true";
                     siguienteControl = this.botonImprimir();
-                    acciones.replaceChildren(siguienteControl);
+                    acciones.replaceChildren(siguienteControl, this.botonCerrarFactura());
+                    campoMonto.value = "";
+                    campoReferencia.value = "";
                     await this.actualizar();
                 } else {
                     aviso.textContent = `${registrado} Quedan ${dinero(resumen.saldo)} por pagar.`;

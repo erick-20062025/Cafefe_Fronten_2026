@@ -1,8 +1,8 @@
-import PedidoPublicoService from "../control/pedido_publico_service.js";
+import PedidoPublicoService from "../control/pedido-publico-service.js";
 import {
     armarPedido, categoriasActivas, fotoDeCategoria, fotoDeProducto, MAX_CANTIDAD, MAX_NOMBRE,
     MAX_UNIDADES, precioEnCentavos, totalEstimado, totalUnidades,
-} from "../entity/pedido_publico.js";
+} from "../entity/pedido-publico-model.js";
 
 const estilos = new URL("../recursos/estilos/pedido_publico.css", import.meta.url);
 const carpetaImagenes = new URL("../recursos/imagenes/", import.meta.url);
@@ -10,6 +10,7 @@ const formatoPrecio = new Intl.NumberFormat("es-SV", { style: "currency", curren
 const plantilla = document.createElement("template");
 plantilla.innerHTML = `
     <link rel="stylesheet" href="${estilos.href}">
+    <p id="aviso-conexion" class="aviso-conexion" role="alert" hidden></p>
     <div class="pedido">
         <div class="catalogo">
             <section id="vista-tipos" aria-labelledby="pedido-titulo">
@@ -72,13 +73,21 @@ class PedidoPublico extends HTMLElement {
 
         this.servicio = new PedidoPublicoService();
         this.mostrarCarrito();
+        this.mostrarConexion();
         this.cargarCategorias();
-        this.cambioRed=()=>{this.servicio.invalidar();this.solicitudCategorias=(this.solicitudCategorias||0)+1;this.solicitudProductos++;this.mostrarCarrito();this.cargarCategorias();if(this.categoria && !this.elemento('seccion-productos').hidden)this.cargarProductos();};
+        this.cambioRed=()=>{this.mostrarConexion();this.servicio.invalidar();this.solicitudCategorias=(this.solicitudCategorias||0)+1;this.solicitudProductos++;this.mostrarCarrito();this.cargarCategorias();if(this.categoria && !this.elemento('seccion-productos').hidden)this.cargarProductos();};
         window.addEventListener('online',this.cambioRed);window.addEventListener('offline',this.cambioRed);
         this.reintentoRed=setInterval(()=>{if(navigator.onLine!==false && !document.hidden && (this.servicio.aviso() || this.servicio.aviso(this.categoria?.idTipoProducto)))this.cambioRed();},30000);
     }
     disconnectedCallback(){ clearInterval(this.reintentoRed);window.removeEventListener('online',this.cambioRed);window.removeEventListener('offline',this.cambioRed);this.solicitudCategorias++;this.solicitudProductos++; }
 
+
+    mostrarConexion() {
+        const aviso = this.elemento("aviso-conexion");
+        const sinConexion = navigator.onLine === false || Boolean(this.servicio.aviso() || (this.categoria && this.servicio.aviso(this.categoria.idTipoProducto)));
+        aviso.hidden = !sinConexion;
+        aviso.textContent = sinConexion ? "SIN CONEXIÓN CON EL CATÁLOGO. Los datos guardados pueden estar desactualizados. Reconecta para enviar tu pedido." : "";
+    }
 
     elemento(id) {
         return this.shadowRoot.getElementById(id);
@@ -95,6 +104,7 @@ class PedidoPublico extends HTMLElement {
             if(version!==this.solicitudCategorias)return;
             this.mostrarCategorias(categorias);
             estado.textContent=this.servicio.aviso() || estado.textContent;
+            this.mostrarConexion();
         } catch (error) {
             const codigo = error.estado ? ` (HTTP ${error.estado})` : "";
             estado.textContent = `No se pudieron cargar las categorías${codigo}. ${error.detalle || error.message}`;
@@ -165,6 +175,7 @@ class PedidoPublico extends HTMLElement {
 
             this.productos = productos.filter(producto => producto.activo === true);
             estado.textContent = this.servicio.aviso(idCategoria) || (this.productos.length ? "" : "Esta categoría no tiene productos disponibles.");
+            this.mostrarConexion();
             this.mostrarProductos();
         } catch (error) {
             if (solicitud !== this.solicitudProductos) return;
@@ -279,7 +290,7 @@ class PedidoPublico extends HTMLElement {
         try {
             const resumen = await this.servicio.cotizar(armarPedido('Vista previa', this.carrito));
             if (version !== this.versionCotizacion || !this.isConnected) return;
-            salida.textContent = `Subtotal ${formatoPrecio.format(resumen.subtotal)} · Descuentos ${formatoPrecio.format(resumen.descuento)} · Total ${formatoPrecio.format(resumen.total)}`;
+            salida.textContent = `Total ${formatoPrecio.format(resumen.total)}`;
             this.elemento('total').textContent = 'Importe definitivo confirmado al registrar la orden.';
         } catch { if (version === this.versionCotizacion) salida.textContent = 'No se pudo actualizar la cotización. El servidor confirmará el total al enviar.'; }
     }
@@ -307,13 +318,14 @@ class PedidoPublico extends HTMLElement {
             this.carrito.clear();
             this.nombre.value = "";
             this.resultado.textContent = orden?.idOrden
-                ? `Pedido recibido. Número de orden: ${orden.idOrden}. Total confirmado: ${formatoPrecio.format(orden.total)}. Descuento: ${formatoPrecio.format(orden.descuento || 0)}.`
+                ? `Pedido recibido. Número de orden: ${orden.idOrden}. Total confirmado: ${formatoPrecio.format(orden.total)}.`
                 : "Pedido recibido.";
         } catch (error) {
             this.resultado.textContent = error.detalle || error.message;
         } finally {
             this.enviando = false;
             this.nombre.disabled = false;
+            this.mostrarConexion();
             this.mostrarProductos();
             this.mostrarCarrito();
         }

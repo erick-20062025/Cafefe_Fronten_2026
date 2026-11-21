@@ -406,8 +406,6 @@ button {
 .contenido { position:relative; isolation:isolate; min-width:0; }
 .contenido::before { content:""; position:absolute; inset:0; z-index:-1; pointer-events:none; background:url('../imagenes/fondo-cafe.png') center top / 850px auto repeat; opacity:.10; }
 .menu-alternar,.menu-cerrar { display:none; }
-cafefe-gestion-ordenes { display:block; margin-top:32px; }
-cafefe-gestion-ordenes .tarjeta { margin:10px 0; }
 @media(max-width:768px){
  .encabezado { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
  .menu-alternar,.menu-cerrar { display:block; min-width:44px; min-height:44px; }

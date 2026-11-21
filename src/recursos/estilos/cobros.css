@@ -231,3 +231,5 @@ cafefe-cobros { display: block; }
  body.imprimiendo-cobro .cobros__id { display:block; width:100%; white-space:normal; overflow-wrap:break-word; }
  body.imprimiendo-cobro .cobros__importes { background:transparent; border-radius:0; }
 }
+
+.cobros__cerrar { margin-inline-start: 0.75rem; }

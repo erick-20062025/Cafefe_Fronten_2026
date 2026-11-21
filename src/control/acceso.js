@@ -6,12 +6,6 @@ export function validarCredenciales(nombre, uuid) {
         throw new DefaultError("Escribe un UUID válido.", { codigo: "VALIDACION" });
 }
 export function permite(sesion, ruta) {
-    if (ruta === 'mis-ordenes') {
-        return Boolean(sesion?.roles?.some(
-            rol => ['camarero', 'administrador'].includes(rol.toLowerCase())
-        ));
-    }
-
     const roles = { recepcion: ["barista", "cocinero"], cobros: ["cajero"] };
     return Boolean(sesion && roles[ruta]?.some(rol => sesion.roles?.includes(rol)));
 }
