@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile, access } from 'node:fs/promises';
 import vm from 'node:vm';
-const root = new URL('../../', import.meta.url);
+const root = new URL('../../src/', import.meta.url);
 const leer = ruta => readFile(new URL(ruta, root), 'utf8');
 test('manifiesto e iconos locales con dimensiones correctas', async () => {
     const manifest=JSON.parse(await leer('manifest.webmanifest'));
@@ -38,13 +38,13 @@ test('shell abre offline; API y mutaciones nunca se interceptan', async () => {
     }
 });
 test('registro relativo y ausencia de persistencia de credenciales', async () => {
-    assert.match(await leer('src/control/pwa.js'),/serviceWorker.register/);
-    for(const archivo of ['src/control/acceso.js','src/boundary/login-view.js','src/boundary/app.js','src/control/pwa.js'])
+    assert.match(await leer('control/pwa.js'),/serviceWorker.register/);
+    for(const archivo of ['control/acceso.js','boundary/login-view.js','boundary/app.js','control/pwa.js'])
         assert.doesNotMatch(await leer(archivo),/localStorage|sessionStorage|console\.(log|debug)|indexedDB/);
 });
 
 test('configuración usa red antes de caché y conserva alternativa offline', async () => {
-    const url='http://localhost:5501/sub/src/config/api.js';
+    const url='http://localhost:5501/sub/config/api.js';
     const w=await worker({online:true});
     w.almacen.set(url,{api:'puerto temporal apagado'});
     let respuesta;

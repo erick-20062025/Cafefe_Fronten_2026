@@ -25,7 +25,7 @@ async function preparar(t) {
 }
 const enviar=v=>v.enviar({preventDefault(){}});
 test('marca es texto normal y no conserva evento de enlace',async()=>{
-    const html=await readFile(new URL('../../index.html',import.meta.url),'utf8');
+    const html=await readFile(new URL('../../src/index.html',import.meta.url),'utf8');
     assert.match(html,/<div class="marca"/);assert.doesNotMatch(html,/<a[^>]*class="marca"/);
     const app=await readFile(new URL('../../src/boundary/app.js',import.meta.url),'utf8');
     assert.doesNotMatch(app,/querySelector\('\.marca'\)\.onclick/);

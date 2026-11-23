@@ -4,7 +4,7 @@
   "short_name": "Cafefe",
   "description": "Sistema de cafetería Cafefe",
   "lang": "es",
-  "start_url": "./index.html#/pedido",
+  "start_url": "./src/index.html#/pedido",
   "scope": "./",
   "display": "standalone",
   "background_color": "#f6f5ef",

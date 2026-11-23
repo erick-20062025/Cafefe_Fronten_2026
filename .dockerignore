@@ -1,0 +1,6 @@
+**
+!Dockerfile.frontend
+!docker/
+!docker/frontend/
+!docker/frontend/nginx.conf
+!docker/frontend/iniciar.sh

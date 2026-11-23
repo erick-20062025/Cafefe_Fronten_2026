@@ -23,7 +23,7 @@ export class CafefeApp extends HTMLElement {
         <button class="sesion-control cafefe-boton" type="button">Iniciar sesión</button><p class="personal-identidad" aria-live="polite"></p>`;
         this.limpiarMenu=conectarMenu(this);
         this.querySelector('.barra-lateral__nota').textContent = 'Acceso del personal según roles del servidor.';
-        this.querySelector('.pie span:last-child').textContent = 'Segundo entregable · PPI115';
+        this.querySelector('.pie span:last-child').textContent = 'Cafefe · PPI115';
         this.querySelector('.sesion-control').onclick = async () => {
             if (!this.acceso.sesion) { this.navegar('login'); return; }
             const cierre = this.acceso.cerrar(); this.navegar('pedido'); this.render();
