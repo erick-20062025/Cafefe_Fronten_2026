@@ -1,9 +1,9 @@
 const BASE = new URL('./', self.location.href);
 const PREFIJO = 'cafefe-shell-' + encodeURIComponent(BASE.pathname) + '-';
-const CACHE = PREFIJO + 'v28';
+const CACHE = PREFIJO + 'v30';
 const CONFIG = new URL('./config/api.js', BASE).href;
 const RECURSOS = [
-    './config/api.js', './control/recepcion-service.js', './entity/preparacion-local.js', './control/listados-cobros.js',
+    './control/monitor_conexion.js', './config/api.js', './control/recepcion-service.js', './entity/preparacion-local.js', './control/listados-cobros.js',
     './control/catalogo_offline.js', './control/menu_movil.js', './recursos/imagenes/fondo-cafe.png',
     './index.html', './entity/detalle_orden.js', './recursos/imagenes/marca/200LogoCafefe.png', './manifest.webmanifest',
     './boundary/app.js', './boundary/login-view.js', './boundary/recepcion-view.js',

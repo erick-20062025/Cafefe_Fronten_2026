@@ -19,7 +19,7 @@ test('registra worker relativo, espera activación e instala solo a solicitud', 
         await registrarPwa(boton,estado);
         assert.ok(opciones.url.pathname.endsWith('/sw.js'));
         assert.equal(opciones.config.scope, new URL('../../../src/',import.meta.url).pathname);
-        assert.match(estado.textContent,/disponibles/); assert.equal(prompts,0);
+        assert.equal(estado.textContent,''); assert.equal(prompts,0);
         eventos.beforeinstallprompt({preventDefault(){},prompt:async()=>prompts++,userChoice:Promise.resolve({outcome:'accepted'})});
         assert.equal(boton.hidden,false); await boton.onclick(); assert.equal(prompts,1); assert.equal(boton.hidden,true);
         eventos.appinstalled(); assert.match(estado.textContent,/instalada/);
