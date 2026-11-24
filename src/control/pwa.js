@@ -13,8 +13,9 @@ export async function registrarPwa(boton, estado) {
         if (teniaControl) estado.textContent = 'Versión actualizada. Recarga al terminar tu operación para usarla.';
     });
     try {
-        await navigator.serviceWorker.register(new URL('../../sw.js', import.meta.url), { scope: new URL('../../', import.meta.url).pathname, updateViaCache: 'none' });
+        await navigator.serviceWorker.register(new URL('../sw.js', import.meta.url), { scope: new URL('../', import.meta.url).pathname, updateViaCache: 'none' });
         await navigator.serviceWorker.ready;
-        estado.textContent = 'Recursos de la aplicación disponibles sin conexión.';
+        // El caché está listo: no mostrar un aviso permanente de "sin conexión".
+        // Un mensaje visible se reserva para problemas reales o actualizaciones.
     } catch { estado.textContent = 'No se pudo habilitar el modo sin conexión. Usa localhost o HTTPS.'; }
 }

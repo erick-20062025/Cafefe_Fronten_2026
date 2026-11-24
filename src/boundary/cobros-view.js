@@ -244,7 +244,7 @@ class CobrosView extends HTMLElement {
             && precioEnCentavos(resumen.saldo) > 0;
         const ticket = nodo("article", "");
         ticket.className = "cobros__ticket";
-        const logo=document.createElement('img'); logo.src='./src/recursos/imagenes/marca/200LogoCafefe.png'; logo.alt='Cafefe'; logo.width=90; logo.height=90;
+        const logo=document.createElement('img'); logo.src='./recursos/imagenes/marca/200LogoCafefe.png'; logo.alt='Cafefe'; logo.width=90; logo.height=90;
         ticket.append(logo, nodo('h2','Cafefe'), nodo('p','Comprobante de consumo'));
         const ordenes=[...new Set((factura.productos || []).map(p=>p.idOrden).filter(Boolean))];
         for (const orden of ordenes) {

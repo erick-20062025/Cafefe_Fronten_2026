@@ -24,14 +24,22 @@ async function preparar(t) {
     return v;
 }
 const enviar=v=>v.enviar({preventDefault(){}});
+function habilitarTemporizadores(t) {
+    // Node 18 espera un arreglo; versiones recientes usan {apis: [...]}.
+    if (Number(process.versions.node.split('.')[0]) < 20) {
+        t.mock.timers.enable(['setTimeout']);
+    } else {
+        t.mock.timers.enable({apis:['setTimeout']});
+    }
+}
 test('marca es texto normal y no conserva evento de enlace',async()=>{
-    const html=await readFile(new URL('../../index.html',import.meta.url),'utf8');
+    const html=await readFile(new URL('../../src/index.html',import.meta.url),'utf8');
     assert.match(html,/<div class="marca"/);assert.doesNotMatch(html,/<a[^>]*class="marca"/);
     const app=await readFile(new URL('../../src/boundary/app.js',import.meta.url),'utf8');
     assert.doesNotMatch(app,/querySelector\('\.marca'\)\.onclick/);
 });
 test('éxito confirmado limpia formulario, vuelve a tipos y muestra banner exactamente 5 segundos',async t=>{
-    const v=await preparar(t);t.mock.timers.enable({apis:['setTimeout']});
+    const v=await preparar(t);habilitarTemporizadores(t);
     await enviar(v);
     assert.equal(v.carrito.size,0);assert.equal(v.nombre.value,'');assert.equal(v.resultado.textContent,'');
     assert.equal(v.categoria,null);assert.equal(v.elemento('vista-tipos').hidden,false);
@@ -42,21 +50,21 @@ test('éxito confirmado limpia formulario, vuelve a tipos y muestra banner exact
     t.mock.timers.tick(1);assert.equal(banner.hidden,true);assert.equal(banner.textContent,'');
 });
 test('nueva notificación sustituye temporizador anterior y se limpia al desmontar',async t=>{
-    const v=await preparar(t);t.mock.timers.enable({apis:['setTimeout']});
+    const v=await preparar(t);habilitarTemporizadores(t);
     v.mostrarExito();t.mock.timers.tick(3000);v.mostrarExito();t.mock.timers.tick(2000);
     assert.equal(v.elemento('notificacion-exito').hidden,false);
     v.disconnectedCallback();assert.equal(v.elemento('notificacion-exito').hidden,true);
     t.mock.timers.tick(5000);assert.equal(v.elemento('notificacion-exito').textContent,'');
 });
 test('fallo conserva carrito y nombre, no navega y mantiene error',async t=>{
-    const v=await preparar(t);t.mock.timers.enable({apis:['setTimeout']});
+    const v=await preparar(t);habilitarTemporizadores(t);
     v.servicio.enviar=async()=>{throw new Error('No hay conexión con el servidor');};
     await enviar(v);t.mock.timers.tick(6000);
     assert.equal(v.carrito.size,1);assert.equal(v.nombre.value,'Ana');assert.equal(v.categoria.idTipoProducto,'bebidas');
     assert.match(v.resultado.textContent,/No hay conexión/);assert.equal(v.elemento('notificacion-exito').hidden,true);
 });
 test('doble clic envía una sola petición y no limpia ni navega antes de confirmación',async t=>{
-    const v=await preparar(t);t.mock.timers.enable({apis:['setTimeout']});let resolver, llamadas=0;
+    const v=await preparar(t);habilitarTemporizadores(t);let resolver, llamadas=0;
     v.servicio.enviar=()=>{llamadas++;return new Promise(r=>resolver=r);};
     const pendiente=enviar(v);await enviar(v);
     assert.equal(llamadas,1);assert.equal(v.carrito.size,1);assert.equal(v.categoria.idTipoProducto,'bebidas');

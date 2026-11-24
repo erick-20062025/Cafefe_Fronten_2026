@@ -1,7 +1,7 @@
 export class LoginView extends HTMLElement {
     connectedCallback() {
         this.innerHTML = `<section class="login-panel" aria-labelledby="login-titulo">
-        <header class="contenido__cabecera"><img class="login-logo" src="./src/recursos/imagenes/marca/200LogoCafefe.png" alt="Cafefe" width="120" height="120">
+        <header class="contenido__cabecera"><img class="login-logo" src="./recursos/imagenes/marca/200LogoCafefe.png" alt="Cafefe" width="120" height="120">
         <p class="contenido__etiqueta">BIENVENIDO AL EQUIPO</p><h1 id="login-titulo">Tu espacio en Cafefe</h1>
         <p class="contenido__descripcion">Accede a las herramientas de tu turno.</p></header>
         <div class="tarjeta acceso"><h2>Iniciar sesión</h2><form>

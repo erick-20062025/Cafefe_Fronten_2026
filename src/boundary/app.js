@@ -8,6 +8,7 @@ import { OrdenService } from '../control/recepcion.js';
 import { Acceso, permite } from '../control/acceso.js';
 import { resolverRuta } from '../control/navegacion.js';
 import { registrarPwa } from '../control/pwa.js';
+import { MonitorConexion } from '../control/monitor_conexion.js';
 // Erick puede registrar los elementos con estos nombres antes de la navegación.
 export const integraciones = { pedido: 'cafefe-pedido', cobros: 'cafefe-cobros' };
 export class CafefeApp extends HTMLElement {
@@ -16,6 +17,8 @@ export class CafefeApp extends HTMLElement {
         this.acceso = new Acceso((nombre, uuid) => this.sesionApi.entrar(nombre, uuid),
             () => this.sesionApi.cerrar(), () => this.sesionApi.recuperar());
         this.restaurando = true;
+        this.estadoServidor = null;
+        this.versionReconexion = 0;
         const plantilla = document.querySelector('#base-cafefe');
         this.append(plantilla.content.cloneNode(true));
         this.querySelector('.navegacion').innerHTML = `<a class="navegacion__item" href="#/pedido">Órdenes</a>
@@ -23,7 +26,7 @@ export class CafefeApp extends HTMLElement {
         <button class="sesion-control cafefe-boton" type="button">Iniciar sesión</button><p class="personal-identidad" aria-live="polite"></p>`;
         this.limpiarMenu=conectarMenu(this);
         this.querySelector('.barra-lateral__nota').textContent = 'Acceso del personal según roles del servidor.';
-        this.querySelector('.pie span:last-child').textContent = 'Segundo entregable · PPI115';
+        this.querySelector('.pie span:last-child').textContent = 'Cafefe · PPI115';
         this.querySelector('.sesion-control').onclick = async () => {
             if (!this.acceso.sesion) { this.navegar('login'); return; }
             const cierre = this.acceso.cerrar(); this.navegar('pedido'); this.render();
@@ -31,27 +34,86 @@ export class CafefeApp extends HTMLElement {
         };
         this.addEventListener('sesion-vencida', () => { this.acceso.sesion = null; this.render(); });
         this.addEventListener('acceso-iniciado', event => this.navegar(event.detail));
-        this.ruta = () => this.render(); this.conexion = () => {
-            this.querySelector('.conexion').textContent = navigator.onLine ? '' : 'Sin conexión: la interfaz está disponible; las consultas requieren conexión.';
-        };
+        this.ruta = () => this.render();
         window.addEventListener('hashchange', this.ruta);
-        window.addEventListener('online', this.conexion); window.addEventListener('offline', this.conexion);
+        this.monitorConexion = new MonitorConexion({ apiUrl: this.sesionApi.urlApi,
+            cambiar: estado => this.cambiarEstadoServidor(estado) });
+        this.monitorConexion.iniciar();
         this.acceso.recuperar().catch(() => {
-            this.querySelector('.conexion').textContent = 'No se pudo recuperar la sesión. Comprueba la conexión.';
+            // El monitor comprueba la API; no confundir falta de sesión con falta de red.
         }).finally(() => { this.restaurando = false; if (this.isConnected) this.render(); });
-        this.conexion(); this.render(); registrarPwa(this.querySelector('.instalar'), this.querySelector('.pwa-estado'));
+        this.render(); registrarPwa(this.querySelector('.instalar'), this.querySelector('.pwa-estado'));
+    }
+    /** El servidor caído no equivale a sesión cerrada: bloquea las vistas
+     * privadas mientras no podemos verificar la sesión. */
+    cambiarEstadoServidor(estado) {
+        const anterior = this.estadoServidor;
+        this.estadoServidor = estado;
+        const aviso = this.querySelector('.conexion');
+        if (aviso) aviso.textContent = estado === 'sin-red'
+            ? 'Sin conexión de red. Puedes consultar el catálogo guardado, pero no enviar pedidos ni pagos.'
+            : estado === 'servidor'
+            ? 'Servidor no disponible. Puedes consultar el catálogo guardado, pero no enviar pedidos ni pagos.' : '';
+        if (estado === 'operativo' && ['sin-red', 'servidor'].includes(anterior)) {
+            void this.revalidarSesionTrasCorte();
+        } else if (estado !== 'operativo') {
+            ++this.versionReconexion;
+            if (this.esRutaPrivada()) this.render();
+            else this.actualizarBarraSesion();
+        }
+    }
+    esRutaPrivada() {
+        return ['login', 'recepcion', 'cobros'].includes(location.hash.replace(/^#\//, ''));
+    }
+    actualizarBarraSesion() {
+        const desconectado = ['sin-red', 'servidor'].includes(this.estadoServidor);
+        const boton = this.querySelector('.sesion-control');
+        boton.disabled = desconectado;
+        boton.textContent = desconectado ? 'Servidor no disponible'
+            : this.acceso.sesion ? 'Cerrar sesión' : 'Iniciar sesión';
+        this.querySelector('.personal-identidad').textContent = desconectado
+            ? 'Sesión y permisos pendientes de verificar.'
+            : this.restaurando ? 'Comprobando sesión…'
+            : this.acceso.sesion ? `${this.acceso.sesion.nombre} · ${this.acceso.sesion.roles.join(', ')}`
+            : 'Pedidos abiertos al público';
+    }
+    async revalidarSesionTrasCorte() {
+        const version = ++this.versionReconexion;
+        this.restaurando = true;
+        if (this.esRutaPrivada()) this.render();
+        else this.actualizarBarraSesion();
+        try {
+            await this.acceso.recuperar();
+        } catch {
+            // Un error transitorio no concede acceso: la vista privada queda
+            // bloqueada y el usuario puede volver a iniciar sesión.
+        } finally {
+            if (version !== this.versionReconexion || !this.isConnected
+                    || this.estadoServidor !== 'operativo') return;
+            this.restaurando = false;
+            if (this.esRutaPrivada()) {
+                if (!this.acceso.sesion && location.hash !== '#/login') this.navegar('login');
+                else this.render();
+            } else this.actualizarBarraSesion();
+        }
     }
     disconnectedCallback() {
         this.limpiarMenu?.();
         window.removeEventListener('hashchange', this.ruta);
-        window.removeEventListener('online', this.conexion); window.removeEventListener('offline', this.conexion);
+        this.monitorConexion?.detener();
+        ++this.versionReconexion;
     }
     navegar(ruta) { if (location.hash === `#/${ruta}`) this.render(); else location.hash = `/${ruta}`; }
     render() {
         const ruta = resolverRuta(location.hash, this.acceso);
         const main = this.querySelector('main'); main.replaceChildren();
-        this.querySelector('.sesion-control').textContent = this.acceso.sesion ? 'Cerrar sesión' : 'Iniciar sesión';
-        this.querySelector('.personal-identidad').textContent = this.acceso.sesion ? `${this.acceso.sesion.nombre} · ${this.acceso.sesion.roles.join(', ')}` : 'Pedidos abiertos al público';
+        this.actualizarBarraSesion();
+        if (this.estadoServidor === 'servidor' || this.estadoServidor === 'sin-red') {
+            if (this.esRutaPrivada()) {
+                main.textContent = 'Servidor no disponible. Recepción, Cobros y el inicio de sesión requieren conexión. Espera a que se restablezca el servicio.';
+                return;
+            }
+        }
         for (const link of this.querySelectorAll('.navegacion a')) {
             const destino = link.hash.slice(2);
             link.hidden = Boolean(this.acceso.sesion && ['recepcion', 'cobros'].includes(destino) && !permite(this.acceso.sesion, destino));
